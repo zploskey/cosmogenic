@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
 import numpy as np
-from numpy import exp, log, array
+from numpy import exp, log, array, abs
 import scipy as sp
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import np_util as util
-import scipy.interpolate as itp
+import scipy.interpolate
 
 # sample specific stuff to tweak:
 
@@ -141,7 +141,7 @@ def R_mu_neg(z):
     rate of stopped negative muons
     heisinger 2002b eq 6 
     """
-    return np.abs(f_mu_neg * sp.derivative(fast_mu_flux, z, dx=0.1))
+    return abs(f_mu_neg * sp.derivative(fast_mu_flux, z, dx=0.1))
 
 @util.autovec
 def Ebar(z):
@@ -247,14 +247,14 @@ def P_n_h(z):
 
 @util.autovec
 def P36_n_mu_neg(z):
-	"""
-	Neutron production rate by negative muon capture
-	Heisinger et al. 2002b eq. 16
-	This function is currently non-functioning until I can find a source
-	for neutron yields.
-	"""
-	return Noxygen * fc * fD * fn * R_mu_neg(z)
-	
+    """
+    Neutron production rate by negative muon capture
+    Heisinger et al. 2002b eq. 16
+    This function is currently non-functioning until I can find a source
+    for neutron yields.
+    """
+    return Noxygen * fc * fD * fn * R_mu_neg(z)
+    
 fnorm = 1 # for now, not sure what this should be
 
 @util.autovec
@@ -267,86 +267,102 @@ def P36_n(z):
 
 @util.autovec
 def P10_mu(z):
-	"""
-	Production rate of Be10 by muons at depth z.
-	"""
-	return P10_mu_f(z) + P10_mu_neg(z)
+    """
+    Production rate of Be10 by muons at depth z.
+    """
+    return P10_mu_f(z) + P10_mu_neg(z)
 
 @util.autovec
 def P10_h(z):
-	"""
-	Production rate of Be10 by hadrons (spallation reactions) at depth z.
-	See Gosse and Phillips (2000)
-	We subtract the fast muon flux from 
-	"""
-	return (p10_St * scaling - P10_mu_f(z)) * exp(-z / LAMBDA_h)
+    """
+    Production rate of Be10 by hadrons (spallation reactions) at depth z.
+    See Gosse and Phillips (2000)
+    We subtract the fast muon flux from 
+    """
+    return (p10_St * scaling - P10_mu_f(z)) * exp(-z / LAMBDA_h)
 
 @util.autovec
 def P10(z):
-	"""
-	The production rate of Be10 in quartz at depth z is the sum of
-	production rates from the spallation rxns as well as fast and negative
-	muons.
-	"""
-	return P10_h(z) + P10_mu(z)
+    """
+    The production rate of Be10 in quartz at depth z is the sum of
+    production rates from the spallation rxns as well as fast and negative
+    muons.
+    """
+    return P10_h(z) + P10_mu(z)
 
-def stone2000(lat, P, Fsp=0.978):
-	a = array([31.8518,  34.3699,  40.3153,  42.0983,  56.7733, 69.0720, 71.8733])
-	b = array([250.3193, 258.4759, 308.9894, 512.6857, 649.1343, 832.4566, 863.1927])
-	c = array([-0.083393, -0.089807, -0.106248, -0.120551, -0.160859, -0.199252, -0.207069])
-	d = array([7.4260e-5, 7.9457e-5, 9.4508e-5, 1.1752e-4, 1.5463e-4, 1.9391e-4, 2.0127e-4])
-	e = array([-2.2397e-8, -2.3697e-8, -2.8234e-8, -3.8809e-8, -5.0330e-8, -6.3653e-8, -6.6043e-8])
+def alt_to_p(z):
+    """
+    Convert elevation z to pressure in hPa.
+    Stone (2000) J. Geophys. Res., 105(B10), 23,753-23,759. Eq. 1
+    """
+    Ps = 1013.25 # sea level pressure (hPa)
+    Ts = 288.15 # sea level temperature (K)
+    dTdz = 0.0065 # adiabatic lapse rate (K/m)
+    # R = 8.314472 # J K-1 mol-1
+    # g = 9.81 # gravitational acceleration (m/s)
+    gMR = 0.03417 # combined constant gM/R (K/m)
+    
+    return Ps * exp((-gMR / dTdz) * (log(Ts) - log(Ts - dTdz * z)))
 
-	# index latitudes
-	ilats = np.arange(0,70,10)
-	
-	# make sure we're dealing with an array so the next part doesn't fail
-	lat = np.abs(array(lat))
-	lat = array([x if x < 60 else 60 for x in lat])
-	
-	# create ratios for 0 through 60 degrees by ten degree intervals
-	n = range(len(ilats))
-	f_lat = [a[x] + b[x] * exp(-P/150.0) + c[x] * P + d[x] * P**2 + e[x] * P**3 for x in n]
-	
-	#S = array([])
-	#for f in f_lat:
-	#	S.append(interp1d(ilats, f))
-	
-	# interpolate the 
-	S = itp.interp1d(ilats, f_lat)(lat)
-	
-# 	lat0 = a[0] + b[0] * exp(-P/150.0) + c(0) * P + d(0) * P**2 + e(0) * P**3
-# 	lat10 = a[1] + b(1 exp(-P/150.0) + c[1] * P + d[1] * P**2 + e[1] * P**3
-# 	lat20 = a[2] + b[2] * exp(-P/150.0) + c[2] * P + d[2] * P**2 + e[2] * P**3
-# 	lat30 = a[3] + b[3] * exp(-P/150.0) + c[3] * P + d[3] * P**2 + e[3] * P**3
-# 	lat40 = a[4] + b[4] * exp(-P/150.0) + c[4] * P + d[4] * P**2 + e[4] * P**3
-# 	lat50 = a[5] + b[5] * exp(-P/150.0) + c[5] * P + d[5] * P**2 + e[5] * P**3
-# 	lat60 = a[6] + b[6] * exp(-P/150.0) + c[6] * P + d[6] * P**2 + e[6] * P**3
-	
-	# production by muons
-	
-	mk = array([0.587, 0.6, 0.678, 0.833, 0.933, 1.0, 1.0])
-	fm_lat = mk * exp((1013.25 - P) / 242.0)
-	
-	#M = array([])
-	#for fm in fm_lat:
-	#	M.append(interp1d(ilats, fm_lat))
-	
-	M = itp.interp1d(ilats, fm_lat)(lat)
-	
-	Fm = 1 - Fsp
-	scalingfactor = S * Fsp + M * Fm
-	
-	return scalingfactor
-	
-	
+def stone2000(lat, P=None, Fsp=0.978, alt=None):
+    """
+    Inputs:
+    lat: sample latitude(s) in degrees, as a scalar or an array
+    P:   pressure(s) in hPa, scalar or array
+    Fsp: fraction of spallation reaction, defaults to 0.978
+    alt: altitude of the sample (m)
+    
+    If both pressure and altitude are supplied we use pressure. If neither is
+    supplied we default to sea level pressure.
+    """
+    if P == None:
+    	if alt == None:
+        	P = 1013.25
+        else:
+			P = alt_to_p(alt)
+    
+    a = array([31.8518,   34.3699,     40.3153,    42.0983,    56.7733,    69.0720,    71.8733])
+    b = array([250.3193,   258.4759,   308.9894,   512.6857,   649.1343,   832.4566,   863.1927])
+    c = array([-0.083393,  -0.089807,  -0.106248,  -0.120551,  -0.160859,  -0.199252,  -0.207069])
+    d = array([7.4260e-5,  7.9457e-5,  9.4508e-5,  1.1752e-4,  1.5463e-4,  1.9391e-4,  2.0127e-4])
+    e = array([-2.2397e-8, -2.3697e-8, -2.8234e-8, -3.8809e-8, -5.0330e-8, -6.3653e-8, -6.6043e-8])
+
+    # create index latitudes
+    ilats = np.arange(0,70,10)
+    
+    # make sure we're dealing with a positive array so the next part doesn't fail
+    lat = abs(lat)
+    # latitudes above 60 deg should be equivalent the scaling at 60, replace them
+    if type(lat) == np.ndarray:
+        lat = array([x if x < 60 else 60 for x in lat])
+    else:
+        if lat > 60: lat = 60
+    
+    # create ratios for 0 through 60 degrees by ten degree intervals
+    n = range(len(ilats))
+    # calculate scaling factors for index latitudes
+    f_lat = [a[x] + b[x] * exp(-P/150.0) + c[x] * P + d[x] * P**2 + e[x] * P**3 for x in n]
+    # interpolate between the index latitud scaling factors and evaluate
+    # the interpolation function at each sample latitude
+    S = interpolate.interp1d(ilats, f_lat)(lat)
+    
+    # muon scaling
+    mk = array([0.587, 0.6, 0.678, 0.833, 0.933, 1.0, 1.0])
+    fm_lat = mk * exp((1013.25 - P) / 242.0)
+    # get muon scaling factors
+    M = interpolate.interp1d(ilats, fm_lat)(lat)
+    
+    scalingfactors = S * Fsp + M * (1 - Fsp)
+    
+    return scalingfactors
 
 def stone2000Rcsp(h, Rc):
-	"""
-	Cutoff-rigidity based scaling scheme based on Lal's spallation polynomials.
-	
-	h  = scalar atmospheric pressure (hPa)
-	Rc = list of cutoff rigidities (GV)
-	
-	"""
-	rad_lats = deg_lats * np.pi / 180.0
+    """
+    Cutoff-rigidity based scaling scheme based on Lal's spallation polynomials.
+    
+    h  = scalar atmospheric pressure (hPa)
+    Rc = list of cutoff rigidities (GV)
+    
+    """
+    rad_lats = deg_lats * np.pi / 180.0
+    return 42
