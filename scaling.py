@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import numpy as np
+import scipy as sp
 from numpy import exp, log, arange, array, abs
 import np_util as util
 import scipy.interpolate
@@ -30,11 +31,11 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     supplied we default to sea level pressure.
     """
     if P == None:
-    	if alt == None:
-        	P = 1013.25
+        if alt == None:
+            P = 1013.25
         else:
-			P = alt_to_p(alt)
-    
+            P = alt_to_p(alt)
+        
     a = array([31.8518,    34.3699,    40.3153,    42.0983,    56.7733,    69.0720,    71.8733])
     b = array([250.3193,   258.4759,   308.9894,   512.6857,   649.1343,   832.4566,   863.1927])
     c = array([-0.083393,  -0.089807,  -0.106248,  -0.120551,  -0.160859,  -0.199252,  -0.207069])
@@ -51,24 +52,36 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
         lat = array([x if x < 60 else 60 for x in lat])
     else:
         if lat > 60: lat = 60.0
+    lat = np.array(lat)
     
     # create ratios for 0 through 60 degrees by ten degree intervals
     n = range(len(ilats))
     # calculate scaling factors for index latitudes
     f_lat = [a[x] + b[x] * exp(-P/150.0) + c[x] * P + d[x] * P**2 + e[x] * P**3 for x in n]
-    # interpolate between the index latitud scaling factors and evaluate
+
+    # for requests with multiple latitudes we need to transpose the result
+    f_lat = np.transpose(f_lat)
+    
+    # interpolate between the index latitude scaling factors and evaluate
     # the interpolation function at each sample latitude
-    S = scipy.interpolate.interp1d(ilats, f_lat)(lat)
+    S = np.zeros(len(lat))
+    for i, ifactors in enumerate(f_lat):
+        S[i] = sp.interpolate.interp1d(ilats, ifactors)(lat[i])
     
     # muon scaling
     mk = array([0.587, 0.6, 0.678, 0.833, 0.933, 1.0, 1.0])
-    fm_lat = mk * exp((1013.25 - P) / 242.0)
+    fm_lat = [mk_i * exp((1013.25 - P) / 242.0) for mk_i in mk]
+    fm_lat = np.transpose(fm_lat)
     # get muon scaling factors
-    M = scipy.interpolate.interp1d(ilats, fm_lat)(lat)
+    
+    M = np.zeros(len(lat))
+    for i, ifactors in enumerate(fm_lat):
+        M[i] = sp.interpolate.interp1d(ilats, ifactors)(lat[i])
     
     scalingfactors = S * Fsp + M * (1 - Fsp)
     
     return scalingfactors
+
 """
 Elsasser et al. 1956 via Dunai's book:
 M = dipole moment [m2 / A]

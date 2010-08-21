@@ -76,7 +76,7 @@ def p_fast_slhl(z, n):
     z is depth in g/cm2
     n is the a nuclide object such as Be10Qtz
     """
-    return nuc.sigma0 * nuc.Natoms * beta(z) * phi_slhl(z) * ebar(z) ** ALPHA
+    return n.sigma0 * n.Natoms * beta(z) * phi_slhl(z) * ebar(z) ** ALPHA
 
 def p_fast(z, flux, nuc):
     """
@@ -108,7 +108,7 @@ def Rv0(z):
     else:
         f = (121100.0 / z)**2
         g = np.exp(-z / 121100.0)
-        dfdz = -2.0 * (121100)**2
+        dfdz = -2 * (121100)**2
         dgdz = -np.exp(-z/121100.0) / 121100.0
         stop_rate = -1.82e-6 * (dfdz * g + dgdz * f)
     return stop_rate 
@@ -138,20 +138,33 @@ def LZ(z):
 	P_MeVc = np.exp(ifnc(np.log(z)))
 	return 263 + 150 * (P_MeVc / 1000.0)
 
-def P_mu_total(z, h, nuc, is_alt=False):
+def P_mu_total(z, h, nuc, is_alt=True):
     """
     Total production rate from muons
     
     Takes:
     z: a vector of depths
-    h: atmospheric pressure in hPa at surface (or altitude in m, see below)
+    h: altitude in meters or the atmospheric pressure in hPa at surface
     n: a nuclide object containing nuclide specific information
-    is_alt (optional): makes h be treated as 
+    is_alt (optional): makes h be treated as an altitude in meters
     """
     t = type(z)
-    if (t == 'numpy.ndarray' or t == 'list') and len(z) != len(h):
+    is_array = (t == np.ndarray or t == list)
+    if is_array and len(z) != len(h):
         raise ValueError("z and h must be arrays of the same length")
-    
+
+    if is_array:
+        j = 0
+        zmod = np.zeros(len(z))
+        for i, zi in enumerate(z):
+            if zi < 1:
+                zi = 1
+            zmod[j] = zi
+    else:
+        if z < 1:
+            zmod = 1
+
+    # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
          h = scaling.alt_to_p(h)
     
@@ -165,17 +178,17 @@ def P_mu_total(z, h, nuc, is_alt=False):
     R_v0 = Rv0(z)
     
     # calculate vertical muon stopping rate at the site
-    L = LZ(z)
+    L = LZ(zmod)
     R_v = R_v0 * np.exp(H / L)
     
     # integrate the stopping rate to get the vertical muon flux at depth z
     # at the sample site
     z = np.array(z)
-    phi_v = np.zeros(len(z))
+    phi_v = int_err = np.zeros(len(z))
     i = 0
     for zi in z:
-        phi_v_tmp = integrate.quad(lambda x: Rv0(x) * np.exp(H[i]/L[i]), zi, 2e5)
-        phi_v[i] = phi_v_tmp[0]
+        phi_v[i], int_err[i] = \
+            integrate.quad(lambda x: Rv0(x) * np.exp(H[i]/L[i]), zi, 2e5)
         i += 1
     
     # add in the flux below 2e5 g / cm2, assumed to be constant
@@ -187,7 +200,7 @@ def P_mu_total(z, h, nuc, is_alt=False):
     # calculate total muon stopping rate at depth z + H
     # R = derivative(tot_muon_flux(z+H))
     nofz = n(z + h)
-    dndz = -0.297 / ((z + H) + 4200) + 1.21e-5 # derivative of 
+    dndz = -0.297 / ((z + H) + 4200) + 1.21e-5 # derivative of n(z+H)
     R = 2 * pi * (R_v / (nofz + 1) - phi_v * nofz**-2 * dndz)
     
     R_neg = F_NEGMU * R # stopping rate of negative muons
@@ -199,7 +212,3 @@ def P_mu_total(z, h, nuc, is_alt=False):
     
     return {'P_tot': P_tot, 'P_fast': P_fast, 'P_neg': P_neg, 'L': L, 'R': R, \
             'phi': phi, 'H': h, 'phi_v': phi_v, 'R_v': R_v, 'phi_v0': phi_v0, 'R_v0': R_v0}
-    
-    
-    
-    
