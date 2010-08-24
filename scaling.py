@@ -2,7 +2,7 @@
 
 import numpy as np
 import scipy as sp
-from numpy import exp, log, arange, array, abs
+from numpy import exp, log, arange, array
 import np_util as util
 import scipy.interpolate
 
@@ -48,11 +48,14 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     # make sure we're dealing with positive numbers so the next part doesn't fail
     lat = abs(lat)
     # latitudes above 60 deg should be equivalent the scaling at 60, replace them
-    if type(lat) == np.ndarray:
+    lat_type = type(lat)
+    is_array = (lat_type == np.ndarray or lat_type == list)
+    if is_array:
         lat = array([x if x < 60 else 60 for x in lat])
     else:
         if lat > 60: lat = 60.0
-    lat = np.array(lat)
+        # make this single number into a length 1 array
+        lat = np.array([lat])
     
     # create ratios for 0 through 60 degrees by ten degree intervals
     n = range(len(ilats))
@@ -64,9 +67,16 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     
     # interpolate between the index latitude scaling factors and evaluate
     # the interpolation function at each sample latitude
-    S = np.zeros(len(lat))
-    for i, ifactors in enumerate(f_lat):
-        S[i] = sp.interpolate.interp1d(ilats, ifactors)(lat[i])
+    nlats = len(lat)
+    S = np.zeros(nlats)
+    idxs = range(nlats)
+    for i in idxs:
+        # deal with lone samples slightly differently
+        if f_lat.ndim == 1:
+            scale_fnc = sp.interpolate.interp1d(ilats, f_lat)
+        else:
+            scale_fnc = sp.interpolate.interp1d(ilats, f_lat[i])
+        S[i] = scale_fnc(lat[i])
     
     # muon scaling
     mk = array([0.587, 0.6, 0.678, 0.833, 0.933, 1.0, 1.0])
@@ -74,9 +84,14 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     fm_lat = np.transpose(fm_lat)
     # get muon scaling factors
     
-    M = np.zeros(len(lat))
-    for i, ifactors in enumerate(fm_lat):
-        M[i] = sp.interpolate.interp1d(ilats, ifactors)(lat[i])
+    M = np.zeros(nlats)
+    for i in idxs:
+        # deal with lone samples slightly differently
+        if f_lat.ndim == 1:
+            magscale_fnc = sp.interpolate.interp1d(ilats, fm_lat)
+        else:
+            magscale_fnc = sp.interpolate.interp1d(ilats, fm_lat[i])
+        M[i] = magscale_fnc(lat[i])
     
     scalingfactors = S * Fsp + M * (1 - Fsp)
     
