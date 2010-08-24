@@ -3,72 +3,100 @@
 import numpy as np
 from numpy import exp, array, abs
 import scipy as sp
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import np_util as util
-import scaling
+import production as prod
 
-# constants
-LAMBDA_BE10 = 4.998e-7 # half life = 1.387 myr from Chmeleff 2010
-LAMBDA_AL26 = 9.832e-7
-LAMBDA_CL36 = 2.303e-6
+## constants
+#LAMBDA_BE10 = 4.998e-7 # half life = 1.387 myr from Chmeleff 2010
+#LAMBDA_AL26 = 9.832e-7
+#LAMBDA_CL36 = 2.303e-6
 
-# Stone production rate normalized to 07KNSTD, Balco AlBe_changes_v22
-p10_St = 4.49 # +/- 0.39
-
-
-LAMBDA_h = 160 # attenuation length of hadronic component in atm, g / cm2
-
-Noxygen = 2.005e22 # atoms of O / g quartz, from John's program
-Nsi = 1.0025e22 # atoms Si / g quartz for Al-26
-Nca = 1.0739e20 # atoms Ca / g / % CaO
-Nk = 1.2786e20 # atoms K / g / % K2O
-
-# percentage CaO and K2O for Cl-36 production
-pctCaO = 56.0 
-pctK2O = 13.0
-
-alpha = 0.75 # Heisinger exponent constant
-
-# Old value from Heisinger
-# be10sigma190 = 0.094*10**-27
-
-# from Balco AlBe_changes_v221
-be10sigma190 = 8.6e-29 
+## Stone production rate normalized to 07KNSTD, Balco AlBe_changes_v22
+#p10_St = 4.49 # +/- 0.39
 
 
-al_be_ratio = 6.75
-al26sigma0 = 2 * al_be_ratio * be10sigma0
+#LAMBDA_h = 160 # attenuation length of hadronic component in atm, g / cm2
 
-# This gives a surface production rate of 2.9 atom/g/yr in K2O, as given in
-# Heisinger 2002, paper 2
-cl36sigma0k = 89.79e-30
+#Noxygen = 2.005e22 # atoms of O / g quartz, from John's program
+#Nsi = 1.0025e22 # atoms Si / g quartz for Al-26
+#Nca = 1.0739e20 # atoms Ca / g / % CaO
+#Nk = 1.2786e20 # atoms K / g / % K2O
 
-cl36sigma0ca = 27.36e-30
+## percentage CaO and K2O for Cl-36 production
+#pctCaO = 56.0 
+#pctK2O = 13.0
 
-# for Al-26 in quartz
-fC26 = 0.296
-fD26 = 0.6559
-fstar26 = 2.2
+#alpha = 0.75 # Heisinger exponent constant
 
-# for Cl-36 in K-feldspar
-fCk = 0.755
-fDk = 0.8020
-fstark = 3.5
+## Old value from Heisinger
+## be10sigma190 = 0.094*10**-27
 
-# for Cl-36 in Ca-carbonate
-fCca = 0.361
-fDca = 0.8486
-fstarca = 4.5
+## from Balco AlBe_changes_v221
+#be10sigma190 = 8.6e-29 
 
 
+#al_be_ratio = 6.75
+#al26sigma0 = 2 * al_be_ratio * be10sigma0
+
+## This gives a surface production rate of 2.9 atom/g/yr in K2O, as given in
+## Heisinger 2002, paper 2
+#cl36sigma0k = 89.79e-30
+
+#cl36sigma0ca = 27.36e-30
+
+## for Al-26 in quartz
+#fC26 = 0.296
+#fD26 = 0.6559
+#fstar26 = 2.2
+
+## for Cl-36 in K-feldspar
+#fCk = 0.755
+#fDk = 0.8020
+#fstark = 3.5
+
+## for Cl-36 in Ca-carbonate
+#fCca = 0.361
+#fDca = 0.8486
+#fstarca = 4.5
+
+def fwd_profile(z0, z_removed, t, n, h, lat):
+    """
+    Calculates the nuclide concentration profile resulting from repeated
+    glaciation of a bedrock surface.
+
+    In all parameters that reference time, time is zero starting at modern day
+    and increases into the past.
+
+    z0: modern depths at which we want predicted concentrations (g/cm2)
+    z_removed: list of depths of rock removed in successive glaciations (g/cm2)
+    t: ages of switching between glacial/interglacial (array of times in years)
+    exposed to cosmic rays in the recent past (in years)
+    n: the nuclide being produced (nuclide object)
+    h: elevation of the site (m)
+    lat: latitude of the site (degrees) 
+    """
+    L = n.LAMBDA
+    N_postgl = simple_expose(z0, t[0], n, h, lat)
+
+    n_samples = len(z0)
+    N = np.zeros(n_samples)
+    z_cur = z0.copy()
+    for i, dz in enumerate(z_removed):
+        z_cur += dz
+        p = prod.P_tot(z_cur, h, lat, n)
+        N += (p / L) * (exp(-L * t[2*i]) + exp(-L * t[2*i+1]))
+
+    N += N_postgl
+    return N
 
 
+def simple_expose(z, t_exp, n, h, lat):
+    # calculate the production rate
+    p = prod.P_tot(z, h, lat, n)
+    return (p / n.LAMBDA) * (1 - exp(-n.LAMBDA * t_exp))
 
-
-
-
-
+# Don't mind the functions below, they have been superseded by muon.py and may
+# not actually work as advertised.
 
 @util.autovec
 def neg_mu_flux(z):
@@ -76,11 +104,6 @@ def neg_mu_flux(z):
     flux of negative muons in cm-2 yr-1
     """
     return f_mu_neg * fast_mu_flux(z)
-
-
-
-
-
 
 @util.autovec
 def P26_mu_f(z):

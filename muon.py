@@ -127,18 +127,18 @@ def R_nmu(z):
 def LZ(z):
 	"""
 	Converts muon range to momentum
-	Effective atmospheric attentuaton length for muons of range Z
+	Effective atmospheric attentuaton length for muons of range z
 	
 	From Heisinger 2002
 	"""
 	p = array([47.04,56.16,68.02,85.1,100,152.7,176.4,221.8,286.8,391.7,494.5,899.5,1101,1502,2103,3104,4104,8105,10110,14110,20110,30110,40110,80110,100100,140100,200100,300100,400100,800100])
-	range = array([0.8516,1.542,2.866,5.70,9.15,26.76,36.96,58.79,93.32,152.4,211.5,441.8,553.4,771.2,1088,1599,2095,3998,4920,6724,9360,13620,17760,33430,40840,54950,74590,104000,130200,212900])
+	rng = array([0.8516,1.542,2.866,5.70,9.15,26.76,36.96,58.79,93.32,152.4,211.5,441.8,553.4,771.2,1088,1599,2095,3998,4920,6724,9360,13620,17760,33430,40840,54950,74590,104000,130200,212900])
 	# interpolate the log range momentum date
-	ifnc = interp.interp1d(np.log(range), np.log(p))
+	ifnc = interp.interp1d(np.log(rng), np.log(p), bounds_error=False)
 	P_MeVc = np.exp(ifnc(np.log(z)))
 	return 263 + 150 * (P_MeVc / 1000.0)
 
-def P_mu_total(z, h, nuc, is_alt=True):
+def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     """
     Total production rate from muons
     
@@ -148,20 +148,24 @@ def P_mu_total(z, h, nuc, is_alt=True):
     n: a nuclide object containing nuclide specific information
     is_alt (optional): makes h be treated as an altitude in meters
     """
-    t = type(z)
-    is_array = (t == np.ndarray or t == list)
-    if is_array and len(z) != len(h):
+    tz = type(z)
+    th = type(h)
+    z_is_array = (tz == np.ndarray or tz == list)
+    h_is_array = (th == np.ndarray or th == list)
+    both_arrays = z_is_array and h_is_array
+    if both_arrays and len(z) != len(h):
         raise ValueError("z and h must be arrays of the same length")
 
-    if is_array:
-        j = 0
+    if z_is_array:
         zmod = np.zeros(len(z))
         for i, zi in enumerate(z):
-            if zi < 1:
+            if zi <= 1:
                 zi = 1
-            zmod[j] = zi
+            zmod[i] = zi
+            
     else:
-        if z < 1:
+        zmod = z
+        if zmod < 1:
             zmod = 1
 
     # if h is an altitude instead of pressure, convert to pressure
@@ -169,10 +173,7 @@ def P_mu_total(z, h, nuc, is_alt=True):
          h = scaling.alt_to_p(h)
     
     # calculate the atmospheric depth of the sample
-    H = 1.019716 * (SEA_LEVEL_PRESSURE - h) 
-    
-    # flux of vertical muons at sea level/high latitude
-    phi_v0 = phi_vert_slhl(z) # save for later?
+    H = 1.019716 * (SEA_LEVEL_PRESSURE - h)
 
     # find the stopping rate of vertical muons at SLHL
     R_v0 = Rv0(z)
@@ -180,17 +181,19 @@ def P_mu_total(z, h, nuc, is_alt=True):
     # calculate vertical muon stopping rate at the site
     L = LZ(zmod)
     R_v = R_v0 * np.exp(H / L)
-    
+
     # integrate the stopping rate to get the vertical muon flux at depth z
     # at the sample site
     z = np.array(z)
     phi_v = int_err = np.zeros(len(z))
-    i = 0
-    for zi in z:
-        phi_v[i], int_err[i] = \
-            integrate.quad(lambda x: Rv0(x) * np.exp(H[i]/L[i]), zi, 2e5)
-        i += 1
-    
+    for i, zi in enumerate(z):
+        if not h_is_array:
+            phi_v[i], int_err[i] = \
+                integrate.quad(lambda x: Rv0(x) * np.exp(H/L[i]), zi, 2e5)
+        else:
+            phi_v[i], int_err[i] = \
+                integrate.quad(lambda x: Rv0(x) * np.exp(H[i]/L[i]), zi, 2e5)
+
     # add in the flux below 2e5 g / cm2, assumed to be constant
     phi_v += phi_vert_slhl(2e5)
     
@@ -202,7 +205,6 @@ def P_mu_total(z, h, nuc, is_alt=True):
     nofz = n(z + h)
     dndz = -0.297 / ((z + H) + 4200) + 1.21e-5 # derivative of n(z+H)
     R = 2 * pi * (R_v / (nofz + 1) - phi_v * nofz**-2 * dndz)
-    
     R_neg = F_NEGMU * R # stopping rate of negative muons
     
     # get nuclide production rates
@@ -210,5 +212,11 @@ def P_mu_total(z, h, nuc, is_alt=True):
     P_neg = R_neg * nuc.k_neg # and negative muons
     P_tot = P_fast + P_neg
     
-    return {'P_tot': P_tot, 'P_fast': P_fast, 'P_neg': P_neg, 'L': L, 'R': R, \
+    if full_data:
+        # flux of vertical muons at sea level/high latitude
+        phi_v0 = phi_vert_slhl(z) # save for later?
+  
+        return {'P_tot': P_tot, 'P_fast': P_fast, 'P_neg': P_neg, 'L': L, 'R': R, \
             'phi': phi, 'H': h, 'phi_v': phi_v, 'R_v': R_v, 'phi_v0': phi_v0, 'R_v0': R_v0}
+    else:
+        return P_tot

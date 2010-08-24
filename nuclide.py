@@ -6,12 +6,12 @@ class Nuclide:
     pass
 
 class Be10Qtz(Nuclide):
-
-
     
     def __init__(self):
         self.Natoms = 2.005e22 # atoms of O / g quartz, from John's program
 
+        self.LAMBDA = 4.998e-7
+        
         # probability factors from Heisinger et al. 2002b
         # for Be-10 production in O in quartz:
         self.fC = 0.704
