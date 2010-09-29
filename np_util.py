@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import numpy as np
+from numpy import vectorize, ndarray
 
 # np_util
 # utility functions to be used with numpy
@@ -10,8 +10,8 @@ def autovec(f):
     Function decorator to do vectorization only as necessary.
     """
     def wrapper(input):
-        if type(input) == np.ndarray:
-            return np.vectorize(f)(input)
+        if type(input) == ndarray:
+            return vectorize(f)(input)
         return f(input)
     
     return wrapper

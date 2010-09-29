@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
 import numpy as np
-from numpy import exp, array, abs
 import scipy as sp
+
 import np_util as util
-import production as prod
+
+import production
 
 ## constants
 #LAMBDA_BE10 = 4.998e-7 # half life = 1.387 myr from Chmeleff 2010
@@ -59,6 +60,12 @@ import production as prod
 #fDca = 0.8486
 #fstarca = 4.5
 
+
+def simple_expose(z, t_exp, n, h, lat):
+    # calculate the production rate
+    p = production.P_tot(z, h, lat, n)
+    return (p / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
+
 def fwd_profile(z0, z_removed, t, n, h, lat):
     """
     Calculates the nuclide concentration profile resulting from repeated
@@ -70,30 +77,57 @@ def fwd_profile(z0, z_removed, t, n, h, lat):
     z0: modern depths at which we want predicted concentrations (g/cm2)
     z_removed: list of depths of rock removed in successive glaciations (g/cm2)
     t: ages of switching between glacial/interglacial (array of times in years)
-    exposed to cosmic rays in the recent past (in years)
+    exposed to cosmic rays in the recent past (in years). The first element of
+    this array should be the exposure time since deglaciation, increasing after.
     n: the nuclide being produced (nuclide object)
     h: elevation of the site (m)
     lat: latitude of the site (degrees) 
     """
     L = n.LAMBDA
-    N_postgl = simple_expose(z0, t[0], n, h, lat)
+    N = np.zeros(len(z0))
+    t_beg = t[2::2]
+    t_end = t[1::2]
 
-    n_samples = len(z0)
-    N = np.zeros(n_samples)
+    # Add nuclides formed postglacially
+    N += simple_expose(z0, t[0], n, h, lat) 
     z_cur = z0.copy()
     for i, dz in enumerate(z_removed):
         z_cur += dz
-        p = prod.P_tot(z_cur, h, lat, n)
-        N += (p / L) * (exp(-L * t[2*i]) + exp(-L * t[2*i+1]))
-
-    N += N_postgl
+        p = production.P_tot(z_cur, h, lat, n)
+        N += (p / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
+        
     return N
 
+def fwd_profile_steps(z0, z_removed, t, n, h, lat):
+    """
+    The profile at end of each interglacial period.
+    """
+    L = n.LAMBDA
+    N = np.zeros(len(z0))
+    Ns = np.zeros( (len(t) + 1, len(z0)) )
+    t_beg = t[2::2]
+    t_end = t[1::2]
 
-def simple_expose(z, t_exp, n, h, lat):
-    # calculate the production rate
-    p = prod.P_tot(z, h, lat, n)
-    return (p / n.LAMBDA) * (1 - exp(-n.LAMBDA * t_exp))
+    # Add nuclides formed postglacially
+    z_cur = z0.copy()
+    for i, dz in enumerate(z_removed):
+        z_cur += dz
+        p = production.P_tot(z_cur, h, lat, n)
+        buildup =  (p / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
+        N += buildup
+        Ns[i,:] = N.copy().T
+    Nhol = simple_expose(z0, t[0], n, h, lat)
+    N += Nhol
+    Ns[-1,:] = N
+    
+    return Ns
+
+def rand_erosion_hist(avg, sigma, n):
+    """
+    Generates a sequence of n numbers randomly distributed about avg_dz and
+    standard deviation approximately equal to sigma.
+    """
+    return np.random.normal(avg, sigma, n)
 
 # Don't mind the functions below, they have been superseded by muon.py and may
 # not actually work as advertised.
@@ -126,7 +160,7 @@ def P10_n_mu_f(z):
     Rate of neutron production by fast muons
     Heisinger et al. 2002a, eq. 21
     """
-    return 4.8*10**-6 * beta_ratio(z) * fast_mu_flux(z) * ebar(z)**alpha
+    return 4.8e-6 * beta_ratio(z) * fast_mu_flux(z) * ebar(z)**alpha
 
 @util.autovec
 def P10_mu_neg(z):
@@ -168,20 +202,20 @@ def P_n_h(z):
     The rate of thermalized neutrons at depth z
     Heisinger et al. 2002b, eq. 15
     """
-    return 2525.0 * exp(-z / LAMBDA_h)
+    return 2525.0 * np.exp(-z / LAMBDA_h)
 
 def P_mu_total(z, h, consts):
-	"""
-	Calculate production rate of Al-26 or Be-10 from muons as a function of
-	depth below the surface z (g/cm2) and site pressure h (hPa).
-	"""
-	
-	# get atmospheric depth in g/cm2
-	H = (1013.25 - h) * 1.019716
-	
+    """
+    Calculate production rate of Al-26 or Be-10 from muons as a function of
+    depth below the surface z (g/cm2) and site pressure h (hPa).
+    """
+    
+    # get atmospheric depth in g/cm2
+    H = (1013.25 - h) * 1.019716
+    
 
 
-	
+    
 @util.autovec
 def P36_n_mu_neg(z):
     """
@@ -216,7 +250,7 @@ def P10_h(z):
     See Gosse and Phillips (2001)
     We subtract the fast muon flux from 
     """
-    return (p10_St * f_scaling - P10_mu_f(z)) * exp(-z / LAMBDA_h)
+    return (p10_St * f_scaling - P10_mu_f(z)) * np.exp(-z / LAMBDA_h)
 
 @util.autovec
 def P10(z):

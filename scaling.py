@@ -2,11 +2,8 @@
 
 import numpy as np
 import scipy as sp
-from numpy import exp, log, arange, array
-import np_util as util
 import scipy.interpolate
 
-@util.autovec
 def alt_to_p(z):
     """
     Convert elevation z to pressure in hPa.
@@ -17,7 +14,7 @@ def alt_to_p(z):
     dTdz = 0.0065 # adiabatic lapse rate (K/m)
     gMR = 0.03417 # combined constant gM/R (K/m)
     
-    return Ps * exp((-gMR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
+    return Ps * np.exp((-gMR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
 
 def stone2000(lat, P=None, Fsp=0.978, alt=None):
     """
@@ -36,14 +33,14 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
         else:
             P = alt_to_p(alt)
         
-    a = array([31.8518,    34.3699,    40.3153,    42.0983,    56.7733,    69.0720,    71.8733])
-    b = array([250.3193,   258.4759,   308.9894,   512.6857,   649.1343,   832.4566,   863.1927])
-    c = array([-0.083393,  -0.089807,  -0.106248,  -0.120551,  -0.160859,  -0.199252,  -0.207069])
-    d = array([7.4260e-5,  7.9457e-5,  9.4508e-5,  1.1752e-4,  1.5463e-4,  1.9391e-4,  2.0127e-4])
-    e = array([-2.2397e-8, -2.3697e-8, -2.8234e-8, -3.8809e-8, -5.0330e-8, -6.3653e-8, -6.6043e-8])
+    a = np.array([31.8518,    34.3699,    40.3153,    42.0983,    56.7733,    69.0720,    71.8733])
+    b = np.array([250.3193,   258.4759,   308.9894,   512.6857,   649.1343,   832.4566,   863.1927])
+    c = np.array([-0.083393,  -0.089807,  -0.106248,  -0.120551,  -0.160859,  -0.199252,  -0.207069])
+    d = np.array([7.4260e-5,  7.9457e-5,  9.4508e-5,  1.1752e-4,  1.5463e-4,  1.9391e-4,  2.0127e-4])
+    e = np.array([-2.2397e-8, -2.3697e-8, -2.8234e-8, -3.8809e-8, -5.0330e-8, -6.3653e-8, -6.6043e-8])
 
     # create index latitudes
-    ilats = arange(0,70,10)
+    ilats = np.arange(0,70,10)
     
     # make sure we're dealing with positive numbers so the next part doesn't fail
     lat = abs(lat)
@@ -51,7 +48,7 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     lat_type = type(lat)
     is_array = (lat_type == np.ndarray or lat_type == list)
     if is_array:
-        lat = array([x if x < 60 else 60 for x in lat])
+        lat = np.array([x if x < 60 else 60 for x in lat])
     else:
         if lat > 60: lat = 60.0
         # make this single number into a length 1 array
@@ -60,7 +57,7 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     # create ratios for 0 through 60 degrees by ten degree intervals
     n = range(len(ilats))
     # calculate scaling factors for index latitudes
-    f_lat = [a[x] + b[x] * exp(-P/150.0) + c[x] * P + d[x] * P**2 + e[x] * P**3 for x in n]
+    f_lat = [a[x] + b[x] * np.exp(-P/150.0) + c[x] * P + d[x] * P**2 + e[x] * P**3 for x in n]
 
     # for requests with multiple latitudes we need to transpose the result
     f_lat = np.transpose(f_lat)
@@ -79,8 +76,8 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
         S[i] = scale_fnc(lat[i])
     
     # muon scaling
-    mk = array([0.587, 0.6, 0.678, 0.833, 0.933, 1.0, 1.0])
-    fm_lat = [mk_i * exp((1013.25 - P) / 242.0) for mk_i in mk]
+    mk = np.array([0.587, 0.6, 0.678, 0.833, 0.933, 1.0, 1.0])
+    fm_lat = [mk_i * np.exp((1013.25 - P) / 242.0) for mk_i in mk]
     fm_lat = np.transpose(fm_lat)
     # get muon scaling factors
     
@@ -119,5 +116,5 @@ def stone2000Rcsp(h, Rc):
     Rc = list of cutoff rigidities (GV)
     
     """
-    rad_lats = deg_lats * np.pi / 180.0
+    #rad_lats = deg_lats * np.pi / 180.0
     return 42

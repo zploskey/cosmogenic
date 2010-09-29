@@ -1,11 +1,10 @@
+#!/usr/bin/python
+
 import muon
 
 ALPHA = 0.75
 
-class Nuclide:
-    pass
-
-class Be10Qtz(Nuclide):
+class Be10Qtz():
     
     def __init__(self):
         self.Natoms = 2.005e22 # atoms of O / g quartz, from John's program
@@ -28,13 +27,11 @@ class Be10Qtz(Nuclide):
         # Production rate in atoms / g / yr from Stone, adjusted for 07KNSTD ala
         # Balco's 2008 paper. This number apparently includes production from
         # fast muons, so I have opted to subtract them here.
-        self.P0 = 4.49 - muon.p_fast_slhl(0, self)
+        self.P0 = 4.49 - muon.p_fast_slhl(0, self) 
     
-class Al26Qtz(Nuclide):
+class Al26Qtz():
     def __init__(self):
         self.Natoms = 1.0025e22
-        
         self.k_neg = 0.296 * 0.6559 * 0.022
-        
         self.sigma190 = 1.41e-27
         self.sigma0 = self.sigma190 / 190 ** ALPHA

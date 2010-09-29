@@ -1,10 +1,12 @@
+#!/usr/bin/python
+
 import numpy as np
 import scipy as sp
-import nuclide
+
 import muon
 import scaling
 
-LAMBDA_h = 160 # attenuation length of hadronic component in atm, g / cm2
+LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
 
 def P_sp(z, alt, lat, n):
     """
