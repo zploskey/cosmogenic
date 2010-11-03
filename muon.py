@@ -51,7 +51,7 @@ def n(z):
     Heisinger et al. 2002a eq. 4
     """
     h = z / 100.0
-    return 3.21 - 0.297 * np.log(h + 42)  + 1.21e-3 * h
+    return 3.21 - 0.297 * np.log(h + 42.0)  + 1.21e-3 * h
 
 def phi_slhl(z):
     """
@@ -67,7 +67,7 @@ def ebar(z):
     """
     h = z / 100.0 # atmospheric depth in hg/cm2
     mean_energy = 7.6 + 321.7 * (1 - np.exp(-h * 8.059e-4))
-    mean_energy += 50.7 * (1 - np.exp(-h * 5.05e-5))
+    mean_energy += 50.7 * (1.0 - np.exp(-h * 5.05e-5))
     return mean_energy
 
 def beta(z):
@@ -81,13 +81,15 @@ def beta(z):
     else:
         if h >= 1000:
             return 0.885
-        b = 0
+        b = 0.0
     loghp1 = np.log(h + 1)
 
     b = 0.846 - 0.015 * loghp1 + 0.003139 * loghp1 * loghp1
     # weave.blitz(expr)
     if type(h) == np.ndarray:
         b[h >= 1000] = 0.885
+    else if h >= 100:
+        b = 0.885
     return b
 
 def p_fast_slhl(z, n):
@@ -96,15 +98,17 @@ def p_fast_slhl(z, n):
     z is depth in g/cm2
     n is the a nuclide object such as Be10Qtz
     """
-    return n.sigma0 * n.Natoms * beta(z) * phi_slhl(z) * ebar(z) ** ALPHA
+    return n.sigma0 * beta(z) * phi_slhl(z) * ebar(z)**ALPHA * n.Natoms
 
-def p_fast(z, flux, nuc):
+def p_fast(z, flux, n):
     """
     Fast neutron production rate at sample site
     Takes:
+    z: depth in g/cm2
     flux: muons flux in muons cm-2 yr-1
+    n: nuclide object with properties sigma0 and Natoms
     """
-    return nuc.sigma0 * nuc.Natoms * flux * beta(z) * ebar(z) ** ALPHA
+    return n.sigma0 * beta(z) * flux * ebar(z)**ALPHA * n.Natoms
 
 def R(z):
     """

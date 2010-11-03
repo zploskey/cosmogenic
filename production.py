@@ -13,7 +13,7 @@ def P_sp(z, alt, lat, n):
     Production rate due to spallation reactions (atoms/g/yr)
     """
     f_scaling = scaling.stone2000(lat=lat, alt=alt, Fsp=1)
-    return  f_scaling * n.P0 * np.exp(-z / LAMBDA_h)
+    return f_scaling * n.P0 * np.exp(-z / LAMBDA_h)
 
 def P_tot(z, alt, lat, n):
     """

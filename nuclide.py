@@ -8,7 +8,6 @@ class Be10Qtz():
     
     def __init__(self):
         self.Natoms = 2.005e22 # atoms of O / g quartz, from John's program
-
         self.LAMBDA = 4.998e-7
         
         # probability factors from Heisinger et al. 2002b
@@ -31,7 +30,10 @@ class Be10Qtz():
     
 class Al26Qtz():
     def __init__(self):
-        self.Natoms = 1.0025e22
+        self.Natoms = 1.0025e22 # atoms Si / g quartz
         self.k_neg = 0.296 * 0.6559 * 0.022
+        self.delk_neg = 0.296 * 0.6559 * 0.002
         self.sigma190 = 1.41e-27
+        self.delsigma190 = 0.17e-27;
         self.sigma0 = self.sigma190 / 190 ** ALPHA
+
