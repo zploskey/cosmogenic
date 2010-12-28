@@ -30,11 +30,10 @@ def phi_vert_slhl(z):
     h = np.atleast_1d(z) / 100.0 # depth in hg/cm2
 
     # calculate the flux in units cm-2 sr-1 s-1
-    # note: nonzero functions like Matlab's find() for a boolean array argument
     flux = np.zeros(len(h))
-    i_lt_2k = np.nonzero(h < 2000)
+    i_lt_2k = np.where(h < 2000)
     flux[i_lt_2k] = fluxLT2k(h[i_lt_2k])
-    i_gt_2k = np.nonzero(h >= 2000)
+    i_gt_2k = np.where(h >= 2000)
     flux[i_gt_2k] = fluxGT2k(h[i_gt_2k])
 
     # convert to cm-2 sr-1 yr-1 and return
