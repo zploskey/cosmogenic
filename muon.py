@@ -4,7 +4,7 @@ import numpy as np
 from numpy import array, abs, pi
 import scipy as sp
 import scipy.integrate as integrate
-import scipy.interpolate
+import scipy.interpolate as interp
 
 import np_util as util
 import scaling
@@ -136,8 +136,8 @@ def R_nmu(z):
 # GENERAL MUONS
 momentums = np.array([47.04,56.16,68.02,85.1,100,152.7,176.4,221.8,286.8,391.7,494.5,899.5,1101,1502,2103,3104,4104,8105,10110,14110,20110,30110,40110,80110,100100,140100,200100,300100,400100,800100])
 ranges = np.array([0.8516,1.542,2.866,5.70,9.15,26.76,36.96,58.79,93.32,152.4,211.5,441.8,553.4,771.2,1088,1599,2095,3998,4920,6724,9360,13620,17760,33430,40840,54950,74590,104000,130200,212900])
-    # interpolate the log range momentum date
-log_LZ_interpolation = sp.interpolate.interp1d(np.log(ranges), np.log(momentums)) #, bounds_error=False)
+# interpolate the log range momentum date
+log_LZ_interp = interp.interp1d(np.log(ranges), np.log(momentums))
 
 def LZ(z):
     """
@@ -150,7 +150,7 @@ def LZ(z):
     # make sure we don't take the log of anything < 1
     z[z < 1] = 1
     
-    P_MeVc = np.exp(log_LZ_interpolation(np.log(z)))
+    P_MeVc = np.exp(log_LZ_interp(np.log(z)))
 
     atten_len = 263 + 150 * (P_MeVc / 1000.0)
     return atten_len
@@ -192,9 +192,9 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     int_err = np.zeros(len(z))
     for i, zi in enumerate(z):
         if H.size != 1:
-            phi_v[i], int_err[i] = sp.integrate.quad(lambda x: Rv0(x) * np.exp(H / L[i]), zi, 2e5+1)
+            phi_v[i], int_err[i] = integrate.quad(lambda x: Rv0(x) * np.exp(H / L[i]), zi, 2e5+1)
         else:
-            phi_v[i], int_err[i] = sp.integrate.quad(lambda x: Rv0(x) * np.exp(H[i] / L[i]), zi, 2e5+1)
+            phi_v[i], int_err[i] = integrate.quad(lambda x: Rv0(x) * np.exp(H[i] / L[i]), zi, 2e5+1)
     
     # add in the flux below 2e5 g / cm2, assumed to be constant
     phi_v += phi_vert_slhl(2e5+1)
