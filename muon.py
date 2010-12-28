@@ -176,7 +176,8 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     h = np.atleast_1d(h)
 
     if z.size != h.size and h.size != 1:
-        raise ValueError("z and h must be arrays of the same length or h must be a scalar")
+        raise ValueError("z and h must be arrays of the same length or h must "
+                         " be a scalar")
 
     # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
@@ -228,5 +229,6 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     else:
         # flux of vertical muons at sea level/high latitude
         phi_v0 = phi_vert_slhl(z)
-        return {'P_tot': P_tot, 'P_fast': P_fast, 'P_neg': P_neg, 'L': L, 'R': R, \
-            'phi': phi, 'H': h, 'phi_v': phi_v, 'R_v': R_v, 'phi_v0': phi_v0, 'R_v0': R_v0}
+        return {'P_tot': P_tot, 'P_fast': P_fast, 'P_neg': P_neg, 'L': L, 
+                'R': R, 'phi': phi, 'H': h, 'phi_v': phi_v, 'R_v': R_v, 
+                'phi_v0': phi_v0, 'R_v0': R_v0}
