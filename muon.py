@@ -10,37 +10,32 @@ from scipy import weave
 import np_util as util
 import scaling
 
-SEC_PER_YEAR = 3.15576 * 10 ** 7
-ALPHA = 0.75
+SEC_PER_YEAR = 3.15576 * 10 ** 7 # seconds per year
+ALPHA = 0.75 # empirical constant from Heisinger
 SEA_LEVEL_PRESSURE = 1013.25 # hPa
-
 F_NEGMU = 1 / (1.268 + 1) # fraction of negative muons (from Heisinger 2002)
 
 # GENERAL MUONS SECTION
+
+# calculations for phi_vert_slhl
+fluxLT2k = lambda x: 258.5 * np.exp(-5.5e-4 * x) / ((x + 210) * ((x + 10)**1.66 + 75))
+fluxGT2k = lambda x: 1.82e-6 * (1211 / x)**2 * np.exp(-x / 1211) + 2.84e-13
 
 def phi_vert_slhl(z):
     """
     Vertical muon flux (Heisinger et al. 2002a eq. 1) at depth z (g / cm2)
     at sea level / high latitude in cm-2 sr-1 yr-1
     """
-    h = z / 100.0 # depth in hg/cm2
+
+    h = np.atleast_1d(z) / 100.0 # depth in hg/cm2
 
     # calculate the flux in units cm-2 sr-1 s-1
-
-    fluxLT2k = lambda x: 258.5 * np.exp(-5.5e-4 * x) / ((x + 210) * ((x + 10)**1.66 + 75))
-    fluxGT2k = lambda x: 1.82e-6 * (1211 / x)**2 * np.exp(-x / 1211) + 2.84e-13
-    if type(h) == np.ndarray:
-        n = len(h)
-        flux = np.zeros(n)
-        i_lt_2k = h[np.nonzero(h) < 2000]
-        flux[i_lt_2k] = fluxLT2k(h[i_lt_2k])
-        i_gt_2k = h[np.nonzero(h) >= 2000]
-        flux[i_gt_2k] = fluxGT2k(h[i_gt_2k])
-    else:
-        if h < 2000:
-            flux = fluxLT2k(h)
-        else:
-            flux = fluxGT2k(h)
+    # note: nonzero functions like Matlab's find() for a boolean array argument
+    flux = np.zeros(len(h))
+    i_lt_2k = np.nonzero(h < 2000)
+    flux[i_lt_2k] = fluxLT2k(h[i_lt_2k])
+    i_gt_2k = np.nonzero(h >= 2000)
+    flux[i_gt_2k] = fluxGT2k(h[i_gt_2k])
 
     # convert to cm-2 sr-1 yr-1 and return
     return flux * SEC_PER_YEAR
@@ -74,22 +69,15 @@ def beta(z):
     """
     Heisinger et al. 2002a approximation of the beta function (eq 16)
     """
+    z = np.atleast_1d(z)
     h = z / 100.0
+    b = np.zeros(len(h))
 
-    if type(h) == np.ndarray:
-        b = np.zeros(len(h))
-    else:
-        if h >= 1000:
-            return 0.885
-        b = 0.0
     loghp1 = np.log(h + 1)
-
     b = 0.846 - 0.015 * loghp1 + 0.003139 * loghp1 * loghp1
-    # weave.blitz(expr)
-    if type(h) == np.ndarray:
-        b[h >= 1000] = 0.885
-    else if h >= 100:
-        b = 0.885
+
+    b[h >= 1000] = 0.885
+
     return b
 
 def p_fast_slhl(z, n):
@@ -160,21 +148,12 @@ def LZ(z):
     
     From Heisinger 2002
     """
-    
+    z = np.atleast_1d(z)
     # make sure we don't take the log of anything < 1
-    if type(z) == np.ndarray:
-        zmod = z.copy()
-        zmod[zmod < 1] = 1
-    else:
-        zmod = z
-        if zmod < 1:
-            zmod = 1
+    z[z < 1] = 1
     
-    P_MeVc = np.exp(log_LZ_interpolation(np.log(zmod)))
-    # if type(P_MeVc == np.ndarray):
-    #    atten_len = np.zeros(len(P_MeVc))
-    #else:
-    #    atten_len = 0
+    P_MeVc = np.exp(log_LZ_interpolation(np.log(z)))
+
     atten_len = 263 + 150 * (P_MeVc / 1000.0)
     return atten_len
 
@@ -188,16 +167,11 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     n: a nuclide object containing nuclide specific information
     is_alt (optional): makes h be treated as an altitude in meters
     """
-    tz = type(z)
-    th = type(h)
-    z_is_array = (tz == np.ndarray or tz == list)
-    h_is_array = (th == np.ndarray or th == list)
-    both_arrays = z_is_array and h_is_array
-    if both_arrays and len(z) != len(h):
-        raise ValueError("z and h must be arrays of the same length")
-    
-    if not h_is_array:
-        h = np.array([h])
+    z = np.atleast_1d(z)
+    h = np.atleast_1d(h)
+
+    if z.size != h.size and h.size != 1:
+        raise ValueError("z and h must be arrays of the same length or h must be a scalar")
 
     # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
@@ -219,7 +193,7 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     phi_v = np.zeros(len(z))
     int_err = np.zeros(len(z))
     for i, zi in enumerate(z):
-        if not h_is_array:
+        if H.size != 1:
             phi_v[i], int_err[i] = sp.integrate.quad(lambda x: Rv0(x) * np.exp(H / L[i]), zi, 2e5+1)
         else:
             phi_v[i], int_err[i] = sp.integrate.quad(lambda x: Rv0(x) * np.exp(H[i] / L[i]), zi, 2e5+1)
