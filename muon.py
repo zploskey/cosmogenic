@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
 import numpy as np
-from numpy import array, abs, pi
-import scipy as sp
-import scipy.integrate as integrate
-import scipy.interpolate as interp
+import scipy
 
-import np_util as util
+from scipy import integrate
+from scipy import interpolate
+
+import np_util
 import scaling
 
 SEC_PER_YEAR = 3.15576 * 10 ** 7 # seconds per year
@@ -16,15 +16,16 @@ F_NEGMU = 1 / (1.268 + 1) # fraction of negative muons (from Heisinger 2002)
 
 # GENERAL MUONS SECTION
 
-# calculations for phi_vert_slhl
-fluxLT2k = lambda x: 258.5 * np.exp(-5.5e-4 * x) / ((x + 210) * ((x + 10)**1.66 + 75))
-fluxGT2k = lambda x: 1.82e-6 * (1211 / x)**2 * np.exp(-x / 1211) + 2.84e-13
-
 def phi_vert_slhl(z):
     """
     Vertical muon flux (Heisinger et al. 2002a eq. 1) at depth z (g / cm2)
     at sea level / high latitude in cm-2 sr-1 yr-1
     """
+    def fluxLT2k(x):
+        return 258.5 * np.exp(-5.5e-4 * x) / ((x + 210) * ((x + 10)**1.66 + 75))
+
+    def fluxGT2k(x):
+        return 1.82e-6 * (1211 / x)**2 * np.exp(-x / 1211) + 2.84e-13        
 
     h = np.atleast_1d(z) / 100.0 # depth in hg/cm2
 
@@ -101,9 +102,9 @@ def R(z):
     rate of stopped muons
     from heisinger 2002b eq 6 
     """
-    return -sp.derivative(phi_slhl, z, dx=0.1)
+    return -scipy.derivative(phi_slhl, z, dx=0.1)
 
-@util.autovec
+@np_util.autovec
 def Rv0(z):
     """
     Analytical solution for the stopping rate of the muon flux at sea
@@ -134,10 +135,16 @@ def R_nmu(z):
     return F_NEGMU * R(z)
 
 # GENERAL MUONS
-momentums = np.array([47.04,56.16,68.02,85.1,100,152.7,176.4,221.8,286.8,391.7,494.5,899.5,1101,1502,2103,3104,4104,8105,10110,14110,20110,30110,40110,80110,100100,140100,200100,300100,400100,800100])
-ranges = np.array([0.8516,1.542,2.866,5.70,9.15,26.76,36.96,58.79,93.32,152.4,211.5,441.8,553.4,771.2,1088,1599,2095,3998,4920,6724,9360,13620,17760,33430,40840,54950,74590,104000,130200,212900])
+momentums = np.array([47.04, 56.16, 68.02, 85.1, 100, 152.7, 176.4, 221.8,
+                      286.8, 391.7, 494.5, 899.5, 1101, 1502, 2103, 3104, 4104,    
+                      8105, 10110, 14110, 20110, 30110, 40110, 80110, 100100, 
+                      140100,200100,300100,400100,800100])
+ranges = np.array([0.8516, 1.542, 2.866, 5.70, 9.15, 26.76, 36.96, 58.79, 93.32,
+                   152.4, 211.5, 441.8, 553.4, 771.2, 1088, 1599, 2095, 3998,   
+                   4920, 6724, 9360, 13620, 17760, 33430, 40840, 54950, 74590,
+                   104000, 130200, 212900])
 # interpolate the log range momentum date
-log_LZ_interp = interp.interp1d(np.log(ranges), np.log(momentums))
+log_LZ_interp = interpolate.interp1d(np.log(ranges), np.log(momentums))
 
 def LZ(z):
     """
@@ -191,10 +198,12 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     phi_v = np.zeros(len(z))
     int_err = np.zeros(len(z))
     for i, zi in enumerate(z):
-        if H.size != 1:
-            phi_v[i], int_err[i] = integrate.quad(lambda x: Rv0(x) * np.exp(H / L[i]), zi, 2e5+1)
+        if H.size == 1:
+            phi_v[i], int_err[i] = integrate.quad(lambda x: Rv0(x) * np.exp(H 
+                                   / L[i]), zi, 2e5+1)
         else:
-            phi_v[i], int_err[i] = integrate.quad(lambda x: Rv0(x) * np.exp(H[i] / L[i]), zi, 2e5+1)
+            phi_v[i], int_err[i] = integrate.quad(lambda x: Rv0(x) * np.exp(H[i]
+                                   / L[i]), zi, 2e5+1)
     
     # add in the flux below 2e5 g / cm2, assumed to be constant
     phi_v += phi_vert_slhl(2e5+1)
