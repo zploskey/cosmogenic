@@ -5,7 +5,6 @@ from numpy import array, abs, pi
 import scipy as sp
 import scipy.integrate as integrate
 import scipy.interpolate
-from scipy import weave
 
 import np_util as util
 import scaling
