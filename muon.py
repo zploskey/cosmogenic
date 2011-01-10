@@ -200,10 +200,10 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     int_err = np.zeros(len(z))
     for i, zi in enumerate(z):
         if H.size == 1:
-            phi_v[i], int_err[i] = integrate.quad(lambda x: Rv0(x) * np.exp(H 
+            phi_v[i], int_err[i] = integrate.quad(lambda x: R_v0[i] * np.exp(H 
                                    / L[i]), zi, 2e5+1)
         else:
-            phi_v[i], int_err[i] = integrate.quad(lambda x: Rv0(x) * np.exp(H[i]
+            phi_v[i], int_err[i] = integrate.quad(lambda x: R_v0[i] * np.exp(H[i]
                                    / L[i]), zi, 2e5+1)
     
     # add in the flux below 2e5 g / cm2, assumed to be constant
