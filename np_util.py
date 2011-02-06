@@ -1,15 +1,21 @@
 #!/usr/bin/python
+"""
+np_util
+utility functions to be used with numpy
+"""
+
+import functools
 
 from numpy import vectorize, ndarray
 
-# np_util
-# utility functions to be used with numpy
-# just a function wrapper right now to vectorize function
 def autovec(f):
     """
     Function decorator to do vectorization only as necessary.
     """
     def wrapper(input):
+        """
+        Vectorizes the function if the input is an ndarray and evaluates
+        """
         if type(input) == ndarray:
             return vectorize(f)(input)
         return f(input)
@@ -26,7 +32,7 @@ class memoized(object):
         self.cache = {}
     
     def __call__(self, *args):
-        if args in cache:
+        if args in self.cache:
             return self.cache[args]
         else:
             value = self.func(*args)
@@ -38,5 +44,5 @@ class memoized(object):
         return self.func.__doc__
     
     def __get__(self, obj, objtype):
-         """Support instance methods."""
-         return functools.partial(self.__call__, obj)
+        """Support instance methods."""
+        return functools.partial(self.__call__, obj)

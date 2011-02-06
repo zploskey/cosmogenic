@@ -14,4 +14,4 @@ class Sample:
         self.shielding = shielding # shielding correction factor
         self.z = z # depth below surface (g/cm2)
         self.n = n # nuclide object
-        self.f_sp_scaling = scaling.stone2000(lat=lat, alt=h)
+        self.f_sp_scaling = scaling.stone2000(lat, h)

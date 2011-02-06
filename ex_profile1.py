@@ -3,25 +3,17 @@
 import time
 
 import numpy as np
-from numpy import array, arange, linspace, ones
-# import matplotlib as mpl
 import matplotlib.pyplot as plt
-# from matplotlib import rc
-
-# rc('text', usetex=True)
-# rc('font', family='serif')
 
 import nuclide
 import sim
-import production
-import muon
 
 # s = sample.Sample(rho=2.67, h=1000, lat=65, shielding=1.0, z=1)
 # print "Total muon flux: %f " % muon.tot_mu_flux(s)
 rho = 2.67
 start = time.time()
 
-z0 = linspace(0, 800 * rho)
+z0 = np.linspace(0, 800 * rho)
 h = 1.0 # elevation in meters
 lat = 65.0 # sample latitude in degrees
 # lat = array([54,32,34,32,12,45,65,76,43,78]) # latitude array for testing
@@ -37,7 +29,7 @@ be10 = nuclide.Be10Qtz()
 #Ptot = Psp + Pmu
 
 # z_removed = 267 * ones(nt / 2)
-# t = linspace(0,1e6,33)
+# t = np.linspace(0,1e6,33)
 z_removed = np.genfromtxt("erosion_depths.txt") # in meters
 z_removed *= 100 * rho # in g/cm^2
 t = np.add.accumulate(np.genfromtxt("t_periods.txt")) * 1000.0

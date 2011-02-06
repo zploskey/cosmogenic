@@ -1,7 +1,9 @@
 #!/usr/bin/python
+"""
+Scaling functions and associated helper functions
+"""
 
 import numpy as np
-import scipy as sp
 import scipy.interpolate
 
 def alt_to_p(z):
@@ -16,7 +18,7 @@ def alt_to_p(z):
     
     return Ps * np.exp((-gMR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
 
-def stone2000(lat, P=None, Fsp=0.978, alt=None):
+def stone2000(lat, alt=None, Fsp=0.978, P=None):
     """
     Inputs:
     lat: sample latitude(s) in degrees, as a scalar or an array
@@ -40,22 +42,15 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     e = np.array([-2.2397e-8, -2.3697e-8, -2.8234e-8, -3.8809e-8, -5.0330e-8, -6.3653e-8, -6.6043e-8])
 
     # create index latitudes
-    ilats = np.arange(0,70,10)
+    ilats = np.arange(0, 70, 10)
     
-    # make sure we're dealing with positive numbers so the next part doesn't fail
-    lat = abs(lat)
-    # latitudes above 60 deg should be equivalent the scaling at 60, replace them
-    lat_type = type(lat)
-    is_array = (lat_type == np.ndarray or lat_type == list)
-    if is_array:
-        lat = np.array([x if x < 60 else 60 for x in lat])
-    else:
-        if lat > 60: lat = 60.0
-        # make this single number into a length 1 array
-        lat = np.array([lat])
+    # make sure we're dealing with positive numbers 
+    lat = np.atleast_1d(abs(lat))
+    # latitudes above 60 deg should be equivalent the scaling at 60
+    lat = np.array([x if x < 60 else 60 for x in lat])
     
     # create ratios for 0 through 60 degrees by ten degree intervals
-    n = range(len(ilats))
+    n = range(ilats.size)
     # calculate scaling factors for index latitudes
     f_lat = [a[x] + b[x] * np.exp(-P/150.0) + c[x] * P + d[x] * P**2 + e[x] * P**3 for x in n]
 
@@ -64,15 +59,15 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     
     # interpolate between the index latitude scaling factors and evaluate
     # the interpolation function at each sample latitude
-    nlats = len(lat)
+    nlats = lat.size
     S = np.zeros(nlats)
     idxs = range(nlats)
     for i in idxs:
         # deal with lone samples slightly differently
         if f_lat.ndim == 1:
-            scale_fnc = sp.interpolate.interp1d(ilats, f_lat)
+            scale_fnc = scipy.interpolate.interp1d(ilats, f_lat)
         else:
-            scale_fnc = sp.interpolate.interp1d(ilats, f_lat[i])
+            scale_fnc = scipy.interpolate.interp1d(ilats, f_lat[i])
         S[i] = scale_fnc(lat[i])
     
     # muon scaling
@@ -85,9 +80,9 @@ def stone2000(lat, P=None, Fsp=0.978, alt=None):
     for i in idxs:
         # deal with lone samples slightly differently
         if f_lat.ndim == 1:
-            magscale_fnc = sp.interpolate.interp1d(ilats, fm_lat)
+            magscale_fnc = scipy.interpolate.interp1d(ilats, fm_lat)
         else:
-            magscale_fnc = sp.interpolate.interp1d(ilats, fm_lat[i])
+            magscale_fnc = scipy.interpolate.interp1d(ilats, fm_lat[i])
         M[i] = magscale_fnc(lat[i])
     
     scalingfactors = S * Fsp + M * (1 - Fsp)
@@ -105,7 +100,6 @@ lambda = geomagnetic latitude [radians presumably]
 cutoff rigidity Rc [V] = M * mu0 * c * cos^4(lambda) / (14 * pi * RE^2)
 
 m N / s A3
-
 """
 
 def stone2000Rcsp(h, Rc):

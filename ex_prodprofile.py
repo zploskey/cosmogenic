@@ -1,15 +1,10 @@
 #!/usr/bin/python
 
-import time
-
 import numpy as np
-from numpy import array, arange, linspace, ones
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-# from matplotlib import rc
 
 import nuclide
-import sim
 import production
 import muon
 
@@ -18,7 +13,7 @@ import muon
 rho = 2.67
 h = 1 # elevation in meters
 lat = 65 # sample latitude in degrees
-z0 = linspace(0, 800 * rho)
+z0 = np.linspace(0, 800 * rho)
 shielding = 1.0
 be10 = nuclide.Be10Qtz()
 

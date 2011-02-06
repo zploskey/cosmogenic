@@ -1,7 +1,10 @@
 #!/usr/bin/python
 
+"""
+Functions to calculation production rates
+"""
+
 import numpy as np
-import scipy as sp
 
 import muon
 import scaling
@@ -12,7 +15,7 @@ def P_sp(z, alt, lat, n):
     """
     Production rate due to spallation reactions (atoms/g/yr)
     """
-    f_scaling = scaling.stone2000(lat=lat, alt=alt, Fsp=1)
+    f_scaling = scaling.stone2000(lat, alt, 1)
     return f_scaling * n.P0 * np.exp(-z / LAMBDA_h)
 
 def P_tot(z, alt, lat, n):

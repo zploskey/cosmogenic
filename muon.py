@@ -2,11 +2,11 @@
 
 import numpy as np
 import scipy
+import scipy.integrate
+import scipy.interpolate
 
-from scipy import integrate
-from scipy import interpolate
-
-import np_util
+from np_util import autovec
+#from np_util import memoized
 import scaling
 
 SEC_PER_YEAR = 3.15576 * 10 ** 7 # seconds per year
@@ -16,25 +16,26 @@ F_NEGMU = 1 / (1.268 + 1) # fraction of negative muons (from Heisinger 2002)
 
 # GENERAL MUONS SECTION
 
+# @memoized
 def phi_vert_slhl(z):
     """
     Vertical muon flux (Heisinger et al. 2002a eq. 1) at depth z (g / cm2)
     at sea level / high latitude in cm-2 sr-1 yr-1
     """
-    def fluxLT2k(x):
+    def flux_lt2k(x):
         return 258.5 * np.exp(-5.5e-4 * x) / ((x + 210) * ((x + 10)**1.66 + 75))
 
-    def fluxGT2k(x):
+    def flux_gt2k(x):
         return 1.82e-6 * (1211 / x)**2 * np.exp(-x / 1211) + 2.84e-13        
 
     h = np.atleast_1d(z) / 100.0 # depth in hg/cm2
 
     # calculate the flux in units cm-2 sr-1 s-1
-    flux = np.zeros(len(h))
+    flux = np.zeros(h.size)
     i_lt_2k = np.where(h < 2000)
-    flux[i_lt_2k] = fluxLT2k(h[i_lt_2k])
+    flux[i_lt_2k] = flux_lt2k(h[i_lt_2k])
     i_gt_2k = np.where(h >= 2000)
-    flux[i_gt_2k] = fluxGT2k(h[i_gt_2k])
+    flux[i_gt_2k] = flux_gt2k(h[i_gt_2k])
 
     # convert to cm-2 sr-1 yr-1 and return
     return flux * SEC_PER_YEAR
@@ -54,6 +55,7 @@ def phi_slhl(z):
     """
     return 2 * np.pi * phi_vert_slhl(z) / (n(z) + 1)
 
+# @memoized
 def ebar(z):
     """
     Mean rate of change of energy with depth
@@ -64,13 +66,13 @@ def ebar(z):
     mean_energy += 50.7 * (1.0 - np.exp(-h * 5.05e-5))
     return mean_energy
 
+# @memoized
 def beta(z):
     """
     Heisinger et al. 2002a approximation of the beta function (eq 16)
     """
     z = np.atleast_1d(z)
     h = z / 100.0
-    b = np.zeros(len(h))
 
     loghp1 = np.log(h + 1)
     b = 0.846 - 0.015 * loghp1 + 0.003139 * loghp1 * loghp1
@@ -102,9 +104,9 @@ def R(z):
     rate of stopped muons
     from heisinger 2002b eq 6 
     """
-    return -scipy.derivative(phi_slhl, z, dx=0.1)
+    return -scipy.derivative(phi_slhl, z, dx=0.1) #@UndefinedVariable
 
-@np_util.autovec
+@autovec
 def Rv0(z):
     """
     Analytical solution for the stopping rate of the muon flux at sea
@@ -136,16 +138,17 @@ def R_nmu(z):
 
 # GENERAL MUONS
 momentums = np.array([47.04, 56.16, 68.02, 85.1, 100, 152.7, 176.4, 221.8,
-                      286.8, 391.7, 494.5, 899.5, 1101, 1502, 2103, 3104, 4104,    
-                      8105, 10110, 14110, 20110, 30110, 40110, 80110, 100100, 
+                      286.8, 391.7, 494.5, 899.5, 1101, 1502, 2103, 3104, 4104,
+                      8105, 10110, 14110, 20110, 30110, 40110, 80110, 100100,
                       140100,200100,300100,400100,800100])
 ranges = np.array([0.8516, 1.542, 2.866, 5.70, 9.15, 26.76, 36.96, 58.79, 93.32,
                    152.4, 211.5, 441.8, 553.4, 771.2, 1088, 1599, 2095, 3998,   
                    4920, 6724, 9360, 13620, 17760, 33430, 40840, 54950, 74590,
                    104000, 130200, 212900])
 # interpolate the log range momentum date
-log_LZ_interp = interpolate.interp1d(np.log(ranges), np.log(momentums))
+log_LZ_interp = scipy.interpolate.interp1d(np.log(ranges), np.log(momentums))
 
+# @memoized
 def LZ(z):
     """
     Converts muon range to momentum
@@ -159,7 +162,7 @@ def LZ(z):
     
     P_MeVc = np.exp(log_LZ_interp(np.log(z)))
 
-    atten_len = 263 + 150 * (P_MeVc / 1000.0)
+    atten_len = 263.0 + 150.0 * (P_MeVc / 1000.0)
     return atten_len
 
 def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
@@ -181,7 +184,7 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
 
     # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
-         h = scaling.alt_to_p(h)
+        h = scaling.alt_to_p(h)
     
     # calculate the atmospheric depth of the sample
     H = 1.019716 * (SEA_LEVEL_PRESSURE - h)
@@ -196,15 +199,15 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     # integrate the stopping rate to get the vertical muon flux at depth z
     # at the sample site
     
-    phi_v = np.zeros(len(z))
-    int_err = np.zeros(len(z))
+    phi_v = np.zeros(z.size)
+    int_err = np.zeros(z.size)
     for i, zi in enumerate(z):
         if H.size == 1:
-            phi_v[i], int_err[i] = integrate.quad(lambda x: R_v0[i] * np.exp(H 
+            phi_v[i], int_err[i] = scipy.integrate.quad(lambda x: R_v0[i] * np.exp(H 
                                    / L[i]), zi, 2e5+1)
         else:
-            phi_v[i], int_err[i] = integrate.quad(lambda x: R_v0[i] * np.exp(H[i]
-                                   / L[i]), zi, 2e5+1)
+            phi_v[i], int_err[i] = scipy.integrate.quad(lambda x: R_v0[i] 
+                                   * np.exp(H[i] / L[i]), zi, 2e5+1)
     
     # add in the flux below 2e5 g / cm2, assumed to be constant
     phi_v += phi_vert_slhl(2e5+1)

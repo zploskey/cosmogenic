@@ -7,15 +7,13 @@ development.
 
 
 import numpy as np
-import scipy as sp
+import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
 
 import sim
 import nuclide
-import production
 
-
-directory = 'test'
+DIRECTORY = 'test'
 
 rho = 2.67
 n = 20
@@ -43,7 +41,7 @@ lines = []
 npts = 500 # number of points to use on each line
 N = np.zeros(npts)
 #leg = []
-for i in range(1,4):
+for i in range(1, 4):
 
     # begin interglacial period
     depths = np.linspace(0, z0[-1] + idepth[-i], npts)
@@ -61,7 +59,7 @@ for i in range(1,4):
     N *= np.exp(-be10.LAMBDA * tg) # isotopic decay
     # erode the top of the profile away
     depths -= z_removed[-i]
-    nofz = sp.interpolate.interp1d(depths, N) # interpolate conc. curve
+    nofz = interpolate.interp1d(depths, N) # interpolate conc. curve
     depths = np.linspace(0, depths[-1], 500)
     N = nofz(depths)
 
@@ -78,21 +76,24 @@ ln = plt.semilogx(N, depthsm, color='r', lw=2)
 lines = np.append(lines, ln)
 
 #leg = tuple(leg)
-plt.ylim((0,8))
-plt.xlim((2000,6e5))
+plt.ylim((0, 8))
+plt.xlim((2000, 6e5))
 ax = plt.gca()
 ax.invert_yaxis()
 plt.xlabel('[Be-10] (atoms / g quartz)')
 plt.ylabel('Depth (m)')
 
-# helper function to set all lines but the one at index n to hidden
+
 def show_only(n, lines):
+    """
+    Helper function to set all lines but the one at index n to hidden
+    """
     plt.setp(lines, alpha=0)
     plt.setp(lines[n], alpha=1)
 
 # for i, ln in enumerate(lines):
 #   show_only(i, lines)
-#    filename = directory + '/stepwise' + str(i)
+#    filename = DIRECTORY + '/stepwise' + str(i)
 #    plt.savefig(filename, transparent=True)
 
 plt.legend((lines[-1], lines[-2]), \
@@ -108,10 +109,8 @@ for i, ln in enumerate(lines):
 
 #    if i == 0:
 #        plt.setp(lines[i+1], alpha=0)
-    filename = directory + '/step' + str(i)
+    filename = DIRECTORY + '/step' + str(i)
     plt.savefig(filename, transparent=False)
-
-
 
 plt.show()
 

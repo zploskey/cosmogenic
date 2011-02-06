@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import nuclide
-import production
 import sim
 
 rho = 2.67
@@ -16,13 +15,13 @@ glen = np.arange(10000,90000,20000) # meter depths eroded per glaciation
 z_eroded = np.array(300 * rho * np.ones(n))
 
 tH = 17000.0
-
-for i,  in enumerate(glen):
+t = np.zeros((glen.size, 2 * n + 1))
+for i in enumerate(glen):
     t[:,i] = np.add.accumulate([0] + [20000, 80000] * n) + tH
 
 Nhol = sim.simple_expose(z0, tH, be10, h, lat)
-N = np.zeros( (len(depths), len(z0)) )
-for i, zm in enumerate(depths):
+N = np.zeros((z_eroded.size, z0.size))
+for i, zm in enumerate(z_eroded):
     N[i,:] = sim.fwd_profile(z0, z_eroded[:,i], t, be10, h, lat)
 
 z = z0 / 100.0 / rho
@@ -31,7 +30,7 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 plt.semilogx(Nhol, z, 'r--', lw=2)
 leg = ['17 kyr']
-for i, zm in enumerate(depths):
+for i, zm in enumerate(z_eroded):
     plt.semilogx(N[i,:], z, lw=2)
     leg.append(str(zm) + '0 m/Myr')
 ax.invert_yaxis()

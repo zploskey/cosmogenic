@@ -1,11 +1,7 @@
 #!/usr/bin/python
 
 import numpy as np
-from numpy import array, arange, linspace, ones, zeros
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-
-import sim
 
 n = 20 # number of glaciations
 
@@ -33,7 +29,7 @@ z_thickness = \
         np.append( \
             [0],
             np.reshape( \
-                np.column_stack((zeros(n), erosion_depths)), \
+                np.column_stack((np.zeros(n), erosion_depths)), \
                 (2*n, 1))), \
         [0])
 

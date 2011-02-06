@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import nuclide
-import production
 import sim
 
 rho = 2.67
