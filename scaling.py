@@ -3,9 +3,18 @@
 Scaling functions and associated helper functions
 """
 
+import tempfile
+
 import numpy as np
 import scipy.interpolate
 
+from joblib import Memory
+
+cachedir = tempfile.mkdtemp()
+
+memory = Memory(cachedir=cachedir, verbose=0)
+
+#@memory.cache
 def alt_to_p(z):
     """
     Convert elevation z to pressure in hPa.
@@ -18,6 +27,7 @@ def alt_to_p(z):
     
     return Ps * np.exp((-gMR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
 
+@memory.cache
 def stone2000(lat, alt=None, Fsp=0.978, P=None):
     """
     Inputs:

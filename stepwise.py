@@ -5,7 +5,6 @@ Draws some curves of the N vs Z diagram at different stages in its
 development.
 """
 
-
 import numpy as np
 import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt

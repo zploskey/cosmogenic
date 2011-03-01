@@ -1,3 +1,4 @@
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,6 +24,8 @@ def get_zoft(tHol):
     return (depths, times)
 
 if __name__ == '__main__':
+
+    start_time = time.time()
     tsim = 2.0 # Myr
     er = 25.0  # m / Myr
     z0 = er * tsim # initial depth
@@ -37,7 +40,7 @@ if __name__ == '__main__':
 
     plt.figure(1)
 
-    ncurves = 10
+    ncurves = 1
     depths = np.zeros((ncurves, 2*(n+1)))
     times  = np.zeros((ncurves, 2*(n+1)))
     for i in range(ncurves):
@@ -65,6 +68,12 @@ if __name__ == '__main__':
         plt.semilogx(conc[i], z / 100.0 / rho, lw=1)
 
     plt.gca().invert_yaxis()
+    
+    end_time = time.time()
+    total_time = end_time - start_time
+    
+    print "Took {0} seconds.".format(total_time)
+    
     plt.show()
 
     #test = sim.fwd_profile(z, dzs, t, be10, h, lat)

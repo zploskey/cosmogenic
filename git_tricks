@@ -1,0 +1,15 @@
+
+
+
+Cloning this repository from the Hostmonster account:
+
+git clone -u /home1/mattdpar/git/bin/git-upload-pack mattdpar@mattdparker.com:/home1/mattdpar/git/cosmic.git
+
+We need to explicitly tell git where the git-upload-pack binary is because
+remote connections don't load .bashrc on Hostmonster. It will fail saying it
+can't find the binary otherwise. After cloning you can git push and git pull to
+your heart's content.
+
+After that you'll probably want to do this:
+
+git remote add origin ssh://mattdpar@mattdparker.com/home1/mattdpar/git/cosmic.git

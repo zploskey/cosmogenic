@@ -86,7 +86,8 @@ def fwd_profile(z0, z_removed, t, n, h, lat):
     t_end = t[1::2]
 
     # Add nuclides formed postglacially
-    N += simple_expose(z0, t[0], n, h, lat) 
+    N += simple_expose(z0, t[0], n, h, lat)
+    
     z_cur = z0.copy()
     for i, dz in enumerate(z_removed):
         z_cur += dz
