@@ -31,7 +31,20 @@ class Be10Qtz():
         # Production rate in atoms / g / yr from Stone, adjusted for 07KNSTD ala
         # Balco's 2008 paper. This number apparently includes production from
         # fast muons, so I have opted to subtract them here.
-        self.P0 = 4.49 - muon.p_fast_slhl(0, self) 
+        self.P0 = 4.49 - muon.p_fast_slhl(0, self)
+    
+    def relative_error(self, concentration):
+        return 0.9 * concentration**(-0.29402281)
+    
+    def measurement_error(self, concentration):
+        """ Approximate measurement error for the concentration.
+        
+        Approximate measurement error for the concentration given in
+        atoms per gram per year. Estimated from a plot from Balco.
+        See balco_relerr_nov2.jpg or 
+        http://cosmognosis.wordpress.com/2010/11/03/exotic-burial-dating-methods
+        """
+        return concentration * self.relative_error(concentration)
     
 class Al26Qtz():
     """

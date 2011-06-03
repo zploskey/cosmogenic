@@ -14,6 +14,11 @@ LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
 def P_sp(z, alt, lat, n):
     """
     Production rate due to spallation reactions (atoms/g/yr)
+
+    ::math P_{sp} = f_{scaling} * P_0 * exp(-z / \Lambda)
+
+    where f_scaling is a scaling factor. It currently scales for altitude
+    and latitude after Stone (2000).
     """
     f_scaling = scaling.stone2000(lat, alt, 1)
     return f_scaling * n.P0 * np.exp(-z / LAMBDA_h)
