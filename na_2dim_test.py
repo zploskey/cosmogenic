@@ -1,0 +1,32 @@
+from __future__ import division
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from na import NASampler
+
+def func(x):
+    return x[0] ** 2 + x[1] ** 2
+
+lo = -5
+hi = 5
+
+ns = 20
+nr = 3
+tol = 0.01
+ndim = 2
+lo = np.ones(ndim) * lo
+hi = np.ones(ndim) * hi
+sampler = NASampler(ns, nr, func, lo, hi, tol) 
+
+print "Neighborhood Algorithm Minima Finder"
+print "Finding the local minima using the neighborhood algorithm..."
+
+sampler.generate_ensemble(5)
+
+plt.figure(1)
+plt.title('Sampling locations')
+plt.plot(sampler.m[:, 0], sampler.m[:, 1], '.')
+plt.ylabel('$m_1$')
+plt.xlabel('$m_0$')
+plt.show()
