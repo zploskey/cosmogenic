@@ -25,10 +25,6 @@ class NASampler(object):
         self.chosen_misfits = ones(nr) * inf
         self.lowest_idxs = -1 * ones(nr, dtype=numpy.int)
         self.tol = self.m_len if tol == None else tol
-        #if tol == None:
-        #    self.tol = self.m_len
-        #else:
-        #    self.tol = tol
         self.n_fitting = 0
 
     def best_models(self):
@@ -53,8 +49,9 @@ class NASampler(object):
                 idx = self.np + j
                 print "Got to iteration", str(i+1) + ", index", idx
                 self.misfit[idx] = self.f(self.m[idx])
-                if self.misfit[idx] < max_chosen and idx not in self.lowest_idxs:
-                    old_low_idx = numpy.where(self.chosen_misfits == max_chosen)[0]
+                if self.misfit[idx] < max_chosen: 
+                    old_low_idx = numpy.where(self.chosen_misfits ==
+                                              max_chosen)[0][0]
                     self.chosen_misfits[old_low_idx] = self.misfit[idx]
                     self.lowest_idxs[old_low_idx] = idx
                     max_chosen = max(self.chosen_misfits)
@@ -76,29 +73,6 @@ class NASampler(object):
         models = model_range * rands + lows
         return models
 
-#    def run_for(self, iters):
-#        # generate an initial set of ns models randomly in
-#        # the parameter space
-#        max_chosen = max(self.chosen_misfits)
-#        for i in range(iters):
-#            if i != 0:
-#                # increase size of m
-#                self.m = vstack((self.m, self.select_new_models())).copy()
-#                self.misfit = hstack((self.misfit, zeros(self.ns)))
-#            # calculate the misfit function for our ns models
-#            # record the best (lowest) ones so far
-#            for j in range(self.ns):
-#                idx = self.np + j
-#                print "Got to iteration", str(i+1) + ", index", idx
-#                print "misfit shape is", numpy.shape(self.misfit)
-#                self.misfit[idx] = self.f(self.m[idx])
-#                if (self.misfit[idx] < max_chosen and (idx not in self.lowest_idxs)):
-#                    old_low_idx = numpy.where(self.chosen_misfits == max_chosen)[0]
-#                    self.chosen_misfits[old_low_idx] = self.misfit[idx]
-#                    self.lowest_idxs[old_low_idx] = idx
-#            self.np += self.ns
-#        return True
-    
     def select_new_models(self):
         """
         Selects a batch of new models using the Gibbs Sampler method described
