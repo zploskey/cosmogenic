@@ -1,21 +1,41 @@
-"""
-Implementation of the Neighborhood Algorithm
-See Sambridge (1999) in Geophys. J. Int.
+"""Implementation of the Neighborhood Algorithm
 
+Author: Zach Ploskey (zploskey@uw.edu), University of Washington
+
+Implementation of the Neighborhood Algorithm after Sambridge (1999)
+in Geophys. J. Int.    
 """
+
+from __future__ import division
+
 import time
+import math
 
-import numpy
-from numpy import arange, inf, ones, zeros, empty_like,  hstack, vstack
+import numpy as np
+from numpy import arange, inf, ones, zeros, empty_like, hstack, vstack
 
 class NASampler(object):
-    def __init__(self, ns, nr, f, lo_lim, hi_lim, tol=None):        
-        lo_lim = numpy.atleast_1d(lo_lim)
-        hi_lim = numpy.atleast_1d(hi_lim)
+    """ Sample a parameter space using the Neighborhood Algorithm."""
+    
+    def __init__(self, ns, nr, fn, lo_lim, hi_lim, tol=None):        
+        """Create an NASampler to sample a parameter space using the
+        Neighborhood algorithm.
+        
+        Keyword Arguments:
+        ns     -- # of samples to take during each iteration
+        nr     -- # of best samples whose Voronoi cells should be sampled
+        fn     -- Objective function f(x) where x is an ndarray
+        lo_lim -- Lower limit of the search space (size of x)
+        hi_lim -- Upper limit of the search space
+        tol    -- Minimum value of f that is an acceptable solution.
+                  Defaults to len(lo_lim) if not supplied.
+        """
+        lo_lim = np.atleast_1d(lo_lim)
+        hi_lim = np.atleast_1d(hi_lim)
         assert hi_lim.shape == lo_lim.shape, 'Limits must have the same shape.'
         self.ns = ns # number of models for each step
         self.nr = nr # number of Voronoi cells to explore in each step
-        self.f = f   # function to minimize
+        self.fn = fn   # function to minimize
         self.np = 0  # number of previous samples
         self.lo_lim = lo_lim
         self.hi_lim = hi_lim
@@ -23,18 +43,36 @@ class NASampler(object):
         self.m = self.generate_random_models()
         self.misfit = zeros(ns)
         self.chosen_misfits = ones(nr) * inf
-        self.lowest_idxs = -1 * ones(nr, dtype=numpy.int)
+        self.lowest_idxs = -1 * ones(nr, dtype=np.int)
         self.tol = self.m_len if tol == None else tol
         self.n_fitting = 0
 
     def best_models(self):
+        """Row matrix of nr best models."""
         return self.m[self.lowest_idxs]
-
+    
+    def fitting_models(self, tol=None):
+        """Row matrix of models that fit better than tol.
+        
+        If tol is not supplied it defaults to the attribute tol, which by
+        default is the length of a model vector.
+        """
+        if tol == None: tol = self.tol
+        if self.n_fitting == 0:
+            return (np.array([]), np.array([]))
+        fit_idx = self.misfit < tol
+        return (self.m[fit_idx], self.misfit[fit_idx])
+    
     def generate_ensemble(self, n):
+        """Generate an ensemble of at least n models that fit to tolerance.
+        
+        Keyword Arguments:
+        n -- # of fitting models to find
         """
-        Find models that fit the data with a chi**2 <= dof
-        """
-        print 'Start time:', time.asctime(time.localtime(time.time()))
+        assert n > 0, 'n must be at least 1'        
+        
+        start_time = time.time()
+        print 'Start time:', time.asctime(time.localtime(start_time))
         max_chosen = max(self.chosen_misfits)
         self.n_fitting = 0
         i = 0
@@ -48,9 +86,9 @@ class NASampler(object):
             for j in range(self.ns):
                 idx = self.np + j
                 print "Got to iteration", str(i+1) + ", index", idx
-                self.misfit[idx] = self.f(self.m[idx])
+                self.misfit[idx] = self.fn(self.m[idx])
                 if self.misfit[idx] < max_chosen: 
-                    old_low_idx = numpy.where(self.chosen_misfits ==
+                    old_low_idx = np.where(self.chosen_misfits ==
                                               max_chosen)[0][0]
                     self.chosen_misfits[old_low_idx] = self.misfit[idx]
                     self.lowest_idxs[old_low_idx] = idx
@@ -59,13 +97,16 @@ class NASampler(object):
                     self.n_fitting += 1
             self.np += self.ns
             i += 1
-        # for the moment we leave it to the user to extract all the best
-        # fits
-        print 'End time:', time.asctime(time.localtime(time.time()))
+        end_time = time.time()
+        print 'End time:', time.asctime(time.localtime(end_time))
+        elapsed_time = end_time - start_time
+        print 'Took', elapsed_time, 'seconds.'
+        print 'Took', elapsed_time / 60, 'minutes.'
         return True
 
     def generate_random_models(self):
-        rands = numpy.random.random_sample((self.ns, self.m_len))
+        """Generates a row matrix of random models in the parameter space."""
+        rands = np.random.random_sample((self.ns, self.m_len))
         model_range = empty_like(rands)
         lows = empty_like(rands)
         model_range[:] = self.hi_lim - self.lo_lim
@@ -74,49 +115,52 @@ class NASampler(object):
         return models
 
     def select_new_models(self):
-        """
-        Selects a batch of new models using the Gibbs Sampler method described
-        in Sambridge 1999.
+        """ Returns a 2D ndarray where each row is newly selected model.
+        
+        Selects new models using the Gibbs Sampler method from the 
+        Voronoi cells of the best models found so far.
         """
         m_len = self.m_len
         chosen_models = self.best_models()
         new_models = zeros((self.ns, m_len))
         sample_idx = 0
-        # loop through all the voronoi cells
+        # Loop through all the voronoi cells
         for chosen_idx, vk in enumerate(chosen_models):
-            n_take = self.ns / self.nr
+            n_take = math.floor(self.ns / self.nr)
             if chosen_idx == 0:
-                # give any remaining samples to our best model
-                n_take +=self.ns % self.nr
+                # Give any remaining samples to our best model
+                n_take += self.ns % self.nr
             k = self.lowest_idxs[chosen_idx]
             for s in range(n_take):
-                # current random walk location, start at voronoi cell node vk
+                # Current random walk location, start at voronoi cell node vk
                 xA = vk.copy()
-                # iterate through axes in random order, doing a random walk
-                component = numpy.random.permutation(m_len)
-                # vector of perpendicular distances to cell boundaries along the
+                # Iterate through axes in random order, doing a random walk
+                component = np.random.permutation(m_len)
+                # Vector of perpendicular distances to cell boundaries along the
                 # current axis (initially from vk)
-                notk = numpy.where(arange(self.np) != k)
+                notk = np.where(arange(self.np) != k)
                 c0 = component[0]
                 d2 = (self.m[notk, c0] - vk[c0]) ** 2
                 dk2 = 0
                 for idx, i in enumerate(component):
-                    # find distances along axis i to all cell edges
+                    # Find distances along axis i to all cell edges
                     vj = self.m[notk, i]
                     x = 0.5 * (vk[i] + vj + (dk2 - d2) / (vk[i] - vj))
-                    # find the 2 closest points to our chosen node on each side
-                    li = numpy.max(hstack((self.lo_lim, x[x <= xA[i]])))
-                    ui = numpy.min(hstack((self.hi_lim, x[x > xA[i]])))
-                    # randomly sample that interval and move there
+                    # Find the 2 closest points to our chosen node on each side
+                    li = np.max(hstack((self.lo_lim, x[x <= xA[i]])))
+                    ui = np.min(hstack((self.hi_lim, x[x > xA[i]])))
+                    # Randomly sample the interval and move there
                     xB = xA.copy()
-                    xB[i] = (ui - li) * numpy.random.random_sample() + li
-                    if idx != m_len - 1: # if not on last walk step
-                        # update dj2 for next axis
+                    xB[i] = (ui - li) * np.random.random_sample() + li
+                    if idx != m_len - 1:
+                        # We're not on the last walk step.
+                        # Update dj2 for next axis
                         next_i = component[idx + 1]
-                        d2 += (vj - xB[i]) ** 2 - (self.m[notk, next_i] - xB[next_i]) ** 2
-                        dk2 += (vk[i] - xB[i]) ** 2 - (self.m[notk, next_i] - xB[next_i]) ** 2
+                        d2 += (vj - xB[i]) ** 2 - (self.m[notk, next_i] 
+                               - xB[next_i]) ** 2
+                        dk2 += (vk[i] - xB[i]) ** 2 - (self.m[notk, next_i] 
+                               - xB[next_i]) ** 2
                     xA = xB.copy()
                 new_models[sample_idx] = xA
                 sample_idx += 1
         return new_models
-
