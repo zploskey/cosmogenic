@@ -1,5 +1,3 @@
-from __future__ import division
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -28,5 +26,7 @@ plt.figure(1)
 plt.title('Sampling locations')
 plt.plot(sampler.m[:, 0], sampler.m[:, 1], '.')
 plt.ylabel('$m_1$')
+plt.ylim((lo[0], hi[0]))
 plt.xlabel('$m_0$')
+plt.xlim((lo[0], hi[0]))
 plt.show()
