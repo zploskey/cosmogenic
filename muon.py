@@ -3,6 +3,7 @@
 from __future__ import division
 
 import numpy as np
+import scipy as sp
 import scipy.integrate
 import scipy.interpolate
 
@@ -152,10 +153,23 @@ ranges = np.array([0.8516, 1.542, 2.866, 5.70, 9.15, 26.76, 36.96, 58.79, 93.32,
                    152.4, 211.5, 441.8, 553.4, 771.2, 1088, 1599, 2095, 3998,   
                    4920, 6724, 9360, 13620, 17760, 33430, 40840, 54950, 74590,
                    104000, 130200, 212900])
+max_range = ranges[-1]
 # interpolate the log range momentum date
-log_LZ_interp = scipy.interpolate.interp1d(np.log(ranges), np.log(momentums))
+log_LZ_interp_base = sp.interpolate.interp1d(np.log(ranges), np.log(momentums))
 
-# @memory.cache
+def log_LZ_interp(z):
+    slope = sp.derivative(log_LZ_interp_base, np.log(212899),
+            dx=2e-6)
+    bad_idxs = z > np.log(max_range)
+    good_idxs = np.logical_not(bad_idxs)
+    out = np.empty_like(z)
+    out[good_idxs] = log_LZ_interp_base(z[good_idxs])
+    if not good_idxs.all():
+        b = log_LZ_interp_base(np.log(max_range))
+        log_gt_max = z[bad_idxs] - np.log(max_range)
+        out[bad_idxs] = b + slope * log_gt_max
+    return out
+
 def LZ(z):
     """
     Converts muon range to momentum
@@ -163,16 +177,14 @@ def LZ(z):
     
     From Heisinger 2002
     """
-    z = np.atleast_1d(z)
+    zs = np.atleast_1d(z).copy() # make a copy so we don't change this stuff
+    zs[zs < 1] = 1 # make sure we don't take the log of anything < 1
     
-    z[z < 1] = 1 # make sure we don't take the log of anything < 1
-    
-    P_MeVc = np.exp(log_LZ_interp(np.log(z)))
+    P_MeVc = np.exp(log_LZ_interp(np.log(zs)))
 
     atten_len = 263.0 + 150.0 * (P_MeVc / 1000.0)
     return atten_len
 
-# @memory.cache
 def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     """
     Total production rate from muons
