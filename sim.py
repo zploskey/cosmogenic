@@ -4,59 +4,6 @@ import numpy as np
 
 import production
 
-## constants
-#LAMBDA_BE10 = 4.998e-7 # half life = 1.387 myr from Chmeleff 2010
-#LAMBDA_AL26 = 9.832e-7
-#LAMBDA_CL36 = 2.303e-6
-
-## Stone production rate normalized to 07KNSTD, Balco AlBe_changes_v22
-#p10_St = 4.49 # +/- 0.39
-
-
-#LAMBDA_h = 160 # attenuation length of hadronic component in atm, g / cm2
-
-#Noxygen = 2.005e22 # atoms of O / g quartz, from John's program
-#Nsi = 1.0025e22 # atoms Si / g quartz for Al-26
-#Nca = 1.0739e20 # atoms Ca / g / % CaO
-#Nk = 1.2786e20 # atoms K / g / % K2O
-
-## percentage CaO and K2O for Cl-36 production
-#pctCaO = 56.0 
-#pctK2O = 13.0
-
-#alpha = 0.75 # Heisinger exponent constant
-
-## Old value from Heisinger
-## be10sigma190 = 0.094*10**-27
-
-## from Balco AlBe_changes_v221
-#be10sigma190 = 8.6e-29 
-
-
-#al_be_ratio = 6.75
-#al26sigma0 = 2 * al_be_ratio * be10sigma0
-
-## This gives a surface production rate of 2.9 atom/g/yr in K2O, as given in
-## Heisinger 2002, paper 2
-#cl36sigma0k = 89.79e-30
-
-#cl36sigma0ca = 27.36e-30
-
-## for Al-26 in quartz
-#fC26 = 0.296
-#fD26 = 0.6559
-#fstar26 = 2.2
-
-## for Cl-36 in K-feldspar
-#fCk = 0.755
-#fDk = 0.8020
-#fstark = 3.5
-
-## for Cl-36 in Ca-carbonate
-#fCca = 0.361
-#fDca = 0.8486
-#fstarca = 4.5
-
 def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, h_surface, lat):
     """Find the resulting concentration profile for a glacial history and site.
     
@@ -79,9 +26,8 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, h_surface, lat):
     h_surface: elevation of the modern day surface (m)
     n: nuclide object
     """
-    L = n.LAMBDA
     # add the atoms created as we go back in time
-    conc = simple_expose(z, t_postgl, n, h_surface, lat)
+    conc = simple_expose(z, t_postgl, n, h_surface, lat) # recent interglacial
     z_cur = z.copy()    # start at current depths
     t_begint = t_postgl # the age when the current interglacial began
     t_endint = 0.0      # age when current interglacial ended
@@ -91,10 +37,6 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, h_surface, lat):
         t_begint = t_endint + t_intergl[i]
         
         conc += expose(z_cur, t_begint, t_endint, n, h_surface, lat)
-        # p = production.P_tot(z_cur, h, lat, n)
-        # add atoms made during this interglacial period that haven't decayed
-        # conc += (p / L) * (np.exp(-L * t_endint) - np.exp(-L * t_begint))
-    
     return conc
 
 def depth_v_time(gl, intergl, postgl, dz):
@@ -104,7 +46,6 @@ def depth_v_time(gl, intergl, postgl, dz):
     intergl: vector of lengths of interglacial periods (yr)
     postgl: time since last deglaciation (yr)
     dz: vector of glacial erosion depths during each glaciation 
-    
     """
     assert gl.size == intergl.size == dz.size
     # interleave the two arrays
@@ -114,18 +55,55 @@ def depth_v_time(gl, intergl, postgl, dz):
     z = np.add.accumulate(np.concatenate(([0, 0], tmp)))
     return (t, z)
 
-def expose(z, t_init, t_final, n, h, lat):
+def expose(z, t_init, t_final, n, p):
     L = n.LAMBDA
-    p = production.P_tot(z, h, lat, n)
     conc = (p / L) * (np.exp(-L * t_final) - np.exp(-L * t_init))
     return conc
 
-def simple_expose(z, t_exp, n, h, lat):
+def expose_from_site_data(z, t_init, t_final, n, h, lat):
+    p = production.P_tot(z, h, lat, n)
+    return (expose(z, t_init, t_final, n, p), p)
+
+def simple_expose_slow(z, t_exp, n, h, lat):
     # calculate the production rate
     p = production.P_tot(z, h, lat, n)
     return (p / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
 
-def fwd_profile(z0, z_removed, t, n, h, lat):
+def simple_expose(z, t_exp, n, p):
+    return (p(z) / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
+
+def fwd_profile(z0, z_removed, t, n, p):
+    """
+    Calculates the nuclide concentration profile resulting from repeated
+    glaciation of a bedrock surface.
+
+    In all parameters that reference time, time is zero starting at modern day
+    and increases into the past.
+
+    z0: modern depths at which we want predicted concentrations (g/cm2)
+    z_removed: list of depths of rock removed in successive glaciations (g/cm2)
+    t: ages of switching between glacial/interglacial (array of times in years)
+    exposed to cosmic rays in the recent past (in years). The first element of
+    this array should be the exposure time since deglaciation, increasing after.
+    n: nuclide object    
+    p: production rate function of depth in g/cm2
+    """
+    L = n.LAMBDA # decay constant
+    N = np.zeros(z0.size) # nuclide concentration
+    t_beg = t[2::2]
+    t_end = t[1::2]
+
+    # Add nuclides formed postglacially
+    N += simple_expose(z0, t[0], n, p)
+    
+    z_cur = z0.copy()
+    for i, dz in enumerate(z_removed):
+        z_cur += dz
+        N += (p(z_cur) / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
+        
+    return N
+
+def fwd_profile_slow(z0, z_removed, t, n, h, lat):
     """
     Calculates the nuclide concentration profile resulting from repeated
     glaciation of a bedrock surface.
@@ -143,12 +121,12 @@ def fwd_profile(z0, z_removed, t, n, h, lat):
     lat: latitude of the site (degrees) 
     """
     L = n.LAMBDA
-    N = np.zeros(len(z0))
+    N = np.zeros(z0.size)
     t_beg = t[2::2]
     t_end = t[1::2]
 
     # Add nuclides formed postglacially
-    N += simple_expose(z0, t[0], n, h, lat)
+    N += simple_expose_slow(z0, t[0], n, h, lat)
     
     z_cur = z0.copy()
     for i, dz in enumerate(z_removed):
@@ -176,11 +154,43 @@ def fwd_profile_steps(z0, z_removed, t, n, h, lat):
         buildup =  (p / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
         N += buildup
         Ns[i,:] = N.copy().T
-    Nhol = simple_expose(z0, t[0], n, h, lat)
+    Nhol = simple_expose_slow(z0, t[0], n, h, lat)
     N += Nhol
     Ns[-1,:] = N
     
     return Ns
+
+def steady_multiglaciate(model, constraints, zvst=False):
+    """
+    Model should have: [erosion_rate, t_gl, t_int]
+    in units g / cm^2 / yr, yr and yr respectively
+    This is currently unused and might take some cleanup
+    *UNTESTED*!
+    """
+    con = constraints
+    eros, t_gl, t_int = tuple(model.tolist())
+    t_cycle = t_gl + t_int
+    eros_depth = eros_rate * t_cycle
+    
+    z_cur = con['sample_depths'].copy()
+    t_beg = con['t_postgl']
+    t_end = 0
+    while True:
+        p = production.P_tot(z_cur, con['sample_h'], con['lat'],
+                             con['nuclide'])
+        added_conc = expose(z_cur, t_beg, t_end, con['nuclide'], 
+                            con['sample_h'], con['lat'])
+
+        if added_conc < bottom_depth_error:
+            break
+        t_beg += t_cycle
+        t_end += t_cycle
+        dz += eros_depth
+    if zvst:
+        return (conc_true, t_true, z_true)
+    else:
+        return conc_true
+
 
 def rand_erosion_hist(avg, sigma, n):
     """
