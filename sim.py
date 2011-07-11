@@ -1,10 +1,8 @@
-#!/usr/bin/python
-
 import numpy as np
 
 import production
 
-def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, h_surface, lat):
+def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None):
     """Find the resulting concentration profile for a glacial history and site.
     
     This function predicts the concentration profile for a glacial history. The
@@ -16,30 +14,40 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, h_surface, lat):
     this could be adapted to handle variable densities but that might get
     really complicated.
     
-    Parameters
-    
+    Parameters:
     z: vector of samples depths beneath the modern surface (g/cm2)
     t_gl: vector of lengths of time spent ice covered in each glaciation (yr)
     t_intergl: vector, time spent exposed for each interglaciation  period (yr)
     dz: vector of the depths eroded during each glaciation (g/cm2)
     t_postgl: time the sample has been exposed since deglaciation (yr)
-    h_surface: elevation of the modern day surface (m)
     n: nuclide object
+    p: production rate function p(z)
+    
+    Optional Parameters:
+    n_gl: If supplied, this is the number of glaciations to simulate
+    assuming that t_gl and t_intergl are scalars, not vectors.
     """
+    if n_gl is not None:
+        ngl = n_gl
+        t_gl = np.ones(n_gl) * t_gl
+        t_intergl = np.ones(n_gl) * t_intergl
+    else:
+        ngl = dz.size
+
     # add the atoms created as we go back in time
-    conc = simple_expose(z, t_postgl, n, h_surface, lat) # recent interglacial
+    conc = simple_expose(z, t_postgl, n, p) # recent interglacial
     z_cur = z.copy()    # start at current depths
-    t_begint = t_postgl # the age when the current interglacial began
-    t_endint = 0.0      # age when current interglacial ended
-    for i, z_rem in enumerate(dz):
-        z_cur += z_rem # go back to depth and time before glacial erosion
+    t_begint = t_postgl # the time when the current interglacial began
+    t_endint = 0.0      # time (now) when current interglacial ended
+    for i in range(ngl):
+        z_cur += dz[i] # go back to depth and time before glacial erosion
         t_endint = t_begint + t_gl[i]
         t_begint = t_endint + t_intergl[i]
-        
-        conc += expose(z_cur, t_begint, t_endint, n, h_surface, lat)
+        conc += expose(z_cur, t_begint, t_endint, n, p)
     return conc
 
-def depth_v_time(gl, intergl, postgl, dz):
+
+def depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     """ Returns a tuple of times and depths of a surface sample.
     
     gl: vector of lengths of each glaciation (yr)
@@ -47,6 +55,11 @@ def depth_v_time(gl, intergl, postgl, dz):
     postgl: time since last deglaciation (yr)
     dz: vector of glacial erosion depths during each glaciation 
     """
+    if n_gl != None:
+        if isinstance(gl, (int, long, float)):
+            gl = np.ones(n_gl) * gl
+            intergl = np.ones(n_gl) * intergl
+            dz = np.ones(n_gl) * dz
     assert gl.size == intergl.size == dz.size
     # interleave the two arrays
     tmp = np.column_stack((gl, intergl)).reshape(1, gl.size * 2).flatten()
@@ -57,7 +70,7 @@ def depth_v_time(gl, intergl, postgl, dz):
 
 def expose(z, t_init, t_final, n, p):
     L = n.LAMBDA
-    conc = (p / L) * (np.exp(-L * t_final) - np.exp(-L * t_init))
+    conc = (p(z) / L) * (np.exp(-L * t_final) - np.exp(-L * t_init))
     return conc
 
 def expose_from_site_data(z, t_init, t_final, n, h, lat):
