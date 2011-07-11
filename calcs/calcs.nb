@@ -1,0 +1,179 @@
+(* Content-type: application/mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 7.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       145,          7]
+NotebookDataLength[      5133,        169]
+NotebookOptionsPosition[      4689,        150]
+NotebookOutlinePosition[      5029,        165]
+CellTagsIndexPosition[      4986,        162]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["\<\
+Calculate the stopping rate of the vertical muon flux in muons per gram per \
+year. 3.15576*10^7 is the number of seconds per year. fv is the vertical muon \
+flux at sea level / high latitude.\
+\>", "Text",
+ CellChangeTimes->{{3.491152122525868*^9, 3.491152197553549*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"fv", "[", "z_", "]"}], ":=", 
+  RowBox[{"3.15576", "*", 
+   RowBox[{"10", "^", "7"}], " ", "*", "258.5", "*", 
+   RowBox[{
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", "5.5"}], "*", 
+      RowBox[{"10", "^", 
+       RowBox[{"-", "4"}]}], "*", 
+      RowBox[{"z", "/", "100"}]}], "]"}], "/", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"z", "/", "100"}], "+", "210"}], ")"}], "*", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"z", "/", "100"}], "+", "10"}], ")"}], "^", "1.66"}], "+", 
+        "75"}], ")"}]}], ")"}]}]}]}]], "Input",
+ CellChangeTimes->{{3.491149144242859*^9, 3.4911491455773697`*^9}, {
+  3.491149662150641*^9, 3.491149699221726*^9}, {3.491149735384737*^9, 
+  3.491149742373725*^9}, {3.49115160269226*^9, 3.491151605936687*^9}}],
+
+Cell[BoxData[
+ RowBox[{"Simplify", "[", 
+  RowBox[{"258.5", "*", 
+   RowBox[{
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", "5.5"}], "*", 
+      RowBox[{"10", "^", 
+       RowBox[{"-", "4"}]}], "*", 
+      RowBox[{"z", "/", "100"}]}], "]"}], "/", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"z", "/", "100"}], "+", "210"}], ")"}], "*", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"z", "/", "100"}], "+", "10"}], ")"}], "^", "1.66"}], "+", 
+        "75"}], ")"}]}], ")"}]}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.4911513757254887`*^9, 3.4911513777857037`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Simplify", "[", 
+  RowBox[{"D", "[", 
+   RowBox[{
+    FractionBox[
+     RowBox[{"25850.`", " ", 
+      SuperscriptBox["\[ExponentialE]", 
+       RowBox[{
+        RowBox[{"-", "5.500000000000001`*^-6"}], " ", "z"}]]}], 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"21000.`", "\[InvisibleSpace]", "+", "z"}], ")"}], " ", 
+      RowBox[{"(", 
+       RowBox[{"75.`", "\[InvisibleSpace]", "+", 
+        RowBox[{"0.00047863009232263854`", " ", 
+         SuperscriptBox[
+          RowBox[{"(", 
+           RowBox[{"1000", "+", "z"}], ")"}], "1.66`"]}]}], ")"}]}]], ",", 
+    "z"}], "]"}], "]"}]], "Input",
+ CellChangeTimes->{{3.491151389400673*^9, 3.491151408401228*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(", 
+   RowBox[{
+    SuperscriptBox["\[ExponentialE]", 
+     RowBox[{
+      RowBox[{"-", "5.500000000000001`*^-6"}], " ", "z"}]], " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"-", "2.162675625`*^6"}], "-", 
+      RowBox[{"431308.41372479155`", " ", 
+       SuperscriptBox[
+        RowBox[{"(", 
+         RowBox[{"1000", "+", "z"}], ")"}], "0.6599999999999999`"]}], "-", 
+      RowBox[{"13.8016217874356`", " ", 
+       SuperscriptBox[
+        RowBox[{"(", 
+         RowBox[{"1000", "+", "z"}], ")"}], "1.66`"]}], "+", 
+      RowBox[{"z", " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"-", "10.663125000000003`"}], "-", 
+         RowBox[{"20.53849589165674`", " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"1000", "+", "z"}], ")"}], "0.6599999999999999`"]}], "-", 
+         
+         RowBox[{"0.00006804923337597115`", " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"1000", "+", "z"}], ")"}], "1.66`"]}]}], ")"}]}]}], 
+     ")"}]}], ")"}], "/", 
+  RowBox[{"(", 
+   RowBox[{
+    SuperscriptBox[
+     RowBox[{"(", 
+      RowBox[{"21000.`", "\[InvisibleSpace]", "+", "z"}], ")"}], "2"], " ", 
+    SuperscriptBox[
+     RowBox[{"(", 
+      RowBox[{"75.`", "\[InvisibleSpace]", "+", 
+       RowBox[{"0.00047863009232263854`", " ", 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{"1000", "+", "z"}], ")"}], "1.66`"]}]}], ")"}], "2"]}], 
+   ")"}]}]], "Output",
+ CellChangeTimes->{3.4911514089807577`*^9}]
+}, Open  ]]
+},
+WindowSize->{640, 750},
+WindowMargins->{{Automatic, 74}, {35, Automatic}},
+FrontEndVersion->"7.0 for Mac OS X x86 (32-bit) (November 10, 2008)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[545, 20, 282, 5, 41, "Text"],
+Cell[830, 27, 902, 26, 43, "Input"],
+Cell[1735, 55, 686, 22, 43, "Input"],
+Cell[CellGroupData[{
+Cell[2446, 81, 693, 19, 56, InheritFromParent],
+Cell[3142, 102, 1531, 45, 89, "Output"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+
