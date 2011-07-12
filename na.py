@@ -9,10 +9,8 @@ in Geophys. J. Int.
 from __future__ import division
 
 import time
-import math
 
 import numpy as np
-from numpy import arange, inf, ones, zeros, empty_like, hstack, vstack
 
 class NASampler(object):
     """ Sample a parameter space using the Neighborhood Algorithm."""
@@ -41,9 +39,9 @@ class NASampler(object):
         self.hi_lim = hi_lim
         self.m_len = len(lo_lim) # model length
         self.m = self.generate_random_models()
-        self.misfit = zeros(ns)
-        self.chosen_misfits = ones(nr) * inf
-        self.lowest_idxs = -1 * ones(nr, dtype=np.int)
+        self.misfit = np.zeros(ns)
+        self.chosen_misfits = np.ones(nr) * np.inf
+        self.lowest_idxs = -1 * np.ones(nr, dtype=np.int)
         self.tol = self.m_len if tol == None else tol
         self.n_fitting = 0
 
@@ -79,8 +77,8 @@ class NASampler(object):
         while self.n_fitting < n:
             if i != 0:
                 # increase size of m
-                self.m = vstack((self.m, self.select_new_models()))
-                self.misfit = hstack((self.misfit, zeros(self.ns)))
+                self.m = np.vstack((self.m, self.select_new_models()))
+                self.misfit = np.hstack((self.misfit, np.zeros(self.ns)))
             # calculate the misfit function for our ns models
             # record the best (lowest) ones so far
             for j in range(self.ns):
@@ -107,8 +105,8 @@ class NASampler(object):
     def generate_random_models(self):
         """Generates a row matrix of random models in the parameter space."""
         rands = np.random.random_sample((self.ns, self.m_len))
-        model_range = empty_like(rands)
-        lows = empty_like(rands)
+        model_range = np.empty_like(rands)
+        lows = np.empty_like(rands)
         model_range[:] = self.hi_lim - self.lo_lim
         lows[:] = self.lo_lim
         models = model_range * rands + lows
@@ -122,11 +120,11 @@ class NASampler(object):
         """
         m_len = self.m_len
         chosen_models = self.best_models()
-        new_models = zeros((self.ns, m_len))
+        new_models = np.zeros((self.ns, m_len))
         sample_idx = 0
         # Loop through all the voronoi cells
         for chosen_idx, vk in enumerate(chosen_models):
-            n_take = math.floor(self.ns / self.nr)
+            n_take = np.floor(self.ns / self.nr)
             if chosen_idx == 0:
                 # Give any remaining samples to our best model
                 n_take += self.ns % self.nr
@@ -138,7 +136,7 @@ class NASampler(object):
                 component = np.random.permutation(m_len)
                 # Vector of perpendicular distances to cell boundaries along the
                 # current axis (initially from vk)
-                notk = np.where(arange(self.np) != k)
+                notk = np.where(np.arange(self.np) != k)
                 c0 = component[0]
                 d2 = (self.m[notk, c0] - vk[c0]) ** 2
                 dk2 = 0
@@ -147,8 +145,8 @@ class NASampler(object):
                     vj = self.m[notk, i]
                     x = 0.5 * (vk[i] + vj + (dk2 - d2) / (vk[i] - vj))
                     # Find the 2 closest points to our chosen node on each side
-                    li = np.max(hstack((self.lo_lim, x[x <= xA[i]])))
-                    ui = np.min(hstack((self.hi_lim, x[x > xA[i]])))
+                    li = np.max(np.hstack((self.lo_lim, x[x <= xA[i]])))
+                    ui = np.min(np.hstack((self.hi_lim, x[x > xA[i]])))
                     # Randomly sample the interval and move there
                     xB = xA.copy()
                     xB[i] = (ui - li) * np.random.random_sample() + li
