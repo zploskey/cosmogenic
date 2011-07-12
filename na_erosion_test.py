@@ -99,9 +99,6 @@ joblib.dump(con, 'constraints.dat')
 concs = np.array([])
 errors = np.array([])
 models = np.array([])
-num_unsaved = 0
-UNSAVED_LIMIT = 200
-vecs_to_save = ('concs', 'errors', 'models')
 
 def save_vecs(vecs):
     for v in vecs:
@@ -130,17 +127,11 @@ def fn(m):
         concs = np.vstack((concs, conc))
         errors = np.append(errors, error)
         models = np.vstack((models, m))
-    
-    if num_unsaved >= UNSAVED_LIMIT:
-        save_vecs(vecs_to_save)
-        print 'Saved current progress to disk.'
-        num_unsaved = 0
-    num_unsaved += 1
+
     return error
 
 sampler = na.NASampler(con['ns'], con['nr'], fn, lo_lim, hi_lim, tol=dof)
 sampler.generate_ensemble(1000)
-save_vecs(vecs_to_save)
 ms, misfits = sampler.fitting_models()
-save_vecs(('ms', 'misfits'))
-
+vecs_to_save = ('concs', 'errors', 'models', 'ms', 'misfits')
+save_vecs(vecs_to_save)
