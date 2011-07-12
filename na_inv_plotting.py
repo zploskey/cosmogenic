@@ -132,7 +132,7 @@ best_tgl = np.ones(n_gl) * con['t_gl']
 best_tint = np.ones(n_gl) * con['t_int']
 best_conc = sim.multiglaciate(best_m, best_tgl, best_tint, con['t_postgl'],
                 con['sample_depths'], con['nuclide'], p, n_gl=con['n_gl'])
-plt.semilogx(best_conc, z_m, '-', label='Best fit (chi2=%f.2)' % min_misfit)
+plt.semilogx(best_conc, z_m, '-', label='Best fit (chi2=%0.2f)' % min_misfit)
 best_conc_ax.invert_yaxis()
 plt.legend(loc='lower right')
 plt.xlabel('$^{10}$Be Concentration (atoms / g)')

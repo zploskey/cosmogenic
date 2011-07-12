@@ -1,9 +1,10 @@
 from __future__ import division
 
 import numpy as np
+import joblib
+
 from scipy.interpolate import interp1d
 from scipy.interpolate import UnivariateSpline as USpline
-import joblib
 
 import sim
 import nuclide
