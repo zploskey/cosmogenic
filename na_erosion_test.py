@@ -36,13 +36,14 @@ con['min_dz'] = con['min_dz_m'] * 100 * con['rho']
   
 # Define our "true" model
 # 25 m per 20 kyr glaciation, 80kyr interglacials
-dz_true_m  = 2.5 # m / glaciation
-dz_true = np.ones(con['n_gl']) * (dz_true_m * con['rho'] * 100)
-assert con['max_dz'] > dz_true[0]
 con['t_gl'] = 20000
 con['t_int'] = 80000
 t_gl = con['t_gl']
 t_int = con['t_int']
+con['dz_true_m']  = 2.5 # m / glaciation
+dz_true = np.ones(con['n_gl']) * (con['dz_true_m'] * con['rho'] * 100)
+assert con['max_dz'] > dz_true[0]
+
 
 joblib.dump(con, 'constraints.dat')
 
@@ -61,7 +62,7 @@ p = USpline(zs, prod_rates, k=3, s=0)
 joblib.dump(p, 'production_rate.dat')
 
 # get data for plotting a depth vs time curve, meters and years
-t_true, z_true = sim.depth_v_time(t_gl, t_int, con['t_postgl'], dz_true_m)
+t_true, z_true = sim.depth_v_time(t_gl, t_int, con['t_postgl'], dz_true_m, n_gl=con['n_gl'])
 
 conc_true = sim.multiglaciate(dz_true, t_gl, t_int, con['t_postgl'],
                 con['sample_depths'], con['nuclide'], p, n_gl=con['n_gl'])
@@ -90,14 +91,14 @@ hi_lim = np.ones(con['n_gl'])
 lo_lim = np.zeros(con['n_gl'])
 
 # define our parameters for the Neighborhood Algorithm
-con['ns'] = 10 # number of samples each iteration
-con['nr'] = 2  # number of voronoi cells that we explore in each iteration
+con['ns'] = 50 # number of samples each iteration
+con['nr'] = 10  # number of voronoi cells that we explore in each iteration
 
 concs = np.array([])
 errors = np.array([])
 models = np.array([])
 num_unsaved = 0
-UNSAVED_LIMIT = 50
+UNSAVED_LIMIT = 100
 vecs_to_save = ('concs', 'errors', 'models')
 
 def save_vecs(vecs):

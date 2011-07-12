@@ -27,7 +27,7 @@ dof = con['n_gl']
 # denormalize the models
 ms *= con['max_dz'] / con['rho'] / 100.0
 
-dz_true_m = con['dz_true'] / 100.0 / con['rho']
+dz_true_m = con['dz_true_m']
 # get data for plotting a depth vs time curve
 t_true, z_true = sim.depth_v_time(con['t_gl'], con['t_int'], 
                                   con['t_postgl'], dz_true_m, 
