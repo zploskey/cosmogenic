@@ -72,6 +72,10 @@ plt.ylabel('Depth (m)')
 plt.title('Past depth of the surface sample')
 plt.show()
 
+figname = 'best_histories'
+plt.savefig(figname + '.eps')
+plt.savefig(figname + '.png')
+
 ###########################################
 # CONCENTRATION PLOTS                     #
 ###########################################
@@ -112,10 +116,6 @@ plt.ylabel('Depth (m)')
 plt.title('Synthetic and Perturbed $^{10}$Be Concentration Profiles')
 plt.show()
 
-figname = 'best_histories'
-plt.savefig(figname + '.eps')
-plt.savefig(figname + '.png')
-
 # concentration profile with best fit
 best_conc_fig = plt.figure(5)
 best_conc_ax = best_conc_fig.add_subplot(111)
@@ -132,7 +132,7 @@ best_tgl = np.ones(n_gl) * con['t_gl']
 best_tint = np.ones(n_gl) * con['t_int']
 best_conc = sim.multiglaciate(best_m, best_tgl, best_tint, con['t_postgl'],
                 con['sample_depths'], con['nuclide'], p, n_gl=con['n_gl'])
-plt.semilogx(best_conc, z_m, '-', label='Best fit (chi2=%f)' % min_misfit)
+plt.semilogx(best_conc, z_m, '-', label='Best fit (chi2=%f.2)' % min_misfit)
 best_conc_ax.invert_yaxis()
 plt.legend(loc='lower right')
 plt.xlabel('$^{10}$Be Concentration (atoms / g)')

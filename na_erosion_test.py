@@ -44,7 +44,6 @@ con['dz_true_m']  = 2.5 # m / glaciation
 dz_true = np.ones(con['n_gl']) * (con['dz_true_m'] * con['rho'] * 100)
 assert con['max_dz'] > dz_true[0]
 
-
 joblib.dump(con, 'constraints.dat')
 
 mtrue = dz_true / con['max_dz']
@@ -62,10 +61,12 @@ p = USpline(zs, prod_rates, k=3, s=0)
 joblib.dump(p, 'production_rate.dat')
 
 # get data for plotting a depth vs time curve, meters and years
-t_true, z_true = sim.depth_v_time(t_gl, t_int, con['t_postgl'], dz_true_m, n_gl=con['n_gl'])
+t_true, z_true = sim.depth_v_time(t_gl, t_int, con['t_postgl'], con['dz_true_m'], n_gl=con['n_gl'])
 
 conc_true = sim.multiglaciate(dz_true, t_gl, t_int, con['t_postgl'],
-                con['sample_depths'], con['nuclide'], p, n_gl=con['n_gl'])
+                              con['sample_depths'], con['nuclide'], p, 
+                              con['n_gl'])
+
 sigma_true = con['nuclide'].measurement_error(conc_true)
 conc_meas = np.random.normal(loc=conc_true, scale=sigma_true)
 
