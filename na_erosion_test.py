@@ -93,14 +93,14 @@ hi_lim = np.ones(con['n_gl'])
 lo_lim = np.zeros(con['n_gl'])
 
 # define our parameters for the Neighborhood Algorithm
-con['ns'] = 50 # number of samples each iteration
+con['ns'] = 100 # number of samples each iteration
 con['nr'] = 10  # number of voronoi cells that we explore in each iteration
 
 concs = np.array([])
 errors = np.array([])
 models = np.array([])
 num_unsaved = 0
-UNSAVED_LIMIT = 100
+UNSAVED_LIMIT = 200
 vecs_to_save = ('concs', 'errors', 'models')
 
 def save_vecs(vecs):
