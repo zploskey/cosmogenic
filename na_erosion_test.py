@@ -45,8 +45,6 @@ con['dz_true_m']  = 2.5 # m / glaciation
 dz_true = np.ones(con['n_gl']) * (con['dz_true_m'] * con['rho'] * 100)
 assert con['max_dz'] > dz_true[0]
 
-joblib.dump(con, 'constraints.dat')
-
 mtrue = dz_true / con['max_dz']
 
 # Interpolate the production rate
@@ -94,7 +92,9 @@ lo_lim = np.zeros(con['n_gl'])
 
 # define our parameters for the Neighborhood Algorithm
 con['ns'] = 100 # number of samples each iteration
-con['nr'] = 10  # number of voronoi cells that we explore in each iteration
+con['nr'] = 20  # number of voronoi cells that we explore in each iteration
+
+joblib.dump(con, 'constraints.dat')
 
 concs = np.array([])
 errors = np.array([])
@@ -139,7 +139,7 @@ def fn(m):
     return error
 
 sampler = na.NASampler(con['ns'], con['nr'], fn, lo_lim, hi_lim, tol=dof)
-sampler.generate_ensemble(100)
+sampler.generate_ensemble(1000)
 save_vecs(vecs_to_save)
 ms, misfits = sampler.fitting_models()
 save_vecs(('ms', 'misfits'))
