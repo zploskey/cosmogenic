@@ -132,7 +132,7 @@ def fn(m):
     return error
 
 sampler = na.NASampler(con['ns'], con['nr'], fn, lo_lim, hi_lim, tol=dof)
-sampler.generate_ensemble(1000)
+sampler.generate_ensemble(100)
 ms, misfits = sampler.fitting_models()
 vecs_to_save = ('concs', 'errors', 'models', 'ms', 'misfits')
 save_vecs(vecs_to_save)
