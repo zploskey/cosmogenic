@@ -17,7 +17,8 @@ constraints = {
     'lat':            65.0,
     'rho':            2.67,  # g/cm2
     # define max allowable parameter values to normalize to
-    'max_dz_m':       10,    # m
+    'max_dz_m':       3,    # m, setting a lower max to see if we still get
+                            # high old erosion rate
     'min_dz_m':       0.01,  # m
     't_postgl':       12000, #yr
     'nuclide':        nuclide.Be10Qtz(),
