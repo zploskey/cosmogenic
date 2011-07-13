@@ -1,0 +1,8 @@
+1000 samples
+2.5 m / Myr erosion rate
+ns = 100
+nr = 20
+    'max_dz_m':       10,    # m
+    'min_dz_m':       0.01,  # m
+    
+commit c8e41b452fd0033adf13b9bc1fafb5fcd420e5b4
