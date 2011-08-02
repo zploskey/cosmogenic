@@ -2,7 +2,8 @@ import numpy as np
 
 import production
 
-def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None):
+def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
+                  postgl_shielding=0):
     """Find the resulting concentration profile for a glacial history and site.
     
     This function predicts the concentration profile for a glacial history. The
@@ -35,7 +36,8 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None):
         ngl = dz.size
 
     # add the atoms created as we go back in time
-    conc = simple_expose(z, t_postgl, n, p) # recent interglacial
+    # recent interglacial first
+    conc = simple_expose(z + postgl_shielding, t_postgl, n, p) 
     z_cur = z.copy()    # start at current depths
     t_begint = t_postgl # the time when the current interglacial began
     t_endint = 0.0      # time (now) when current interglacial ended

@@ -9,13 +9,14 @@ in Geophys. J. Int.
 from __future__ import division
 
 import time
+import copy
 
 import numpy as np
 
 class NASampler(object):
     """ Sample a parameter space using the Neighborhood Algorithm."""
     
-    def __init__(self, ns, nr, fn, lo_lim, hi_lim, tol=None):        
+    def __init__(self, ns, nr, fn, lo_lim, hi_lim, tol=None, max_iter=1000):        
         """Create an NASampler to sample a parameter space using the
         Neighborhood algorithm.
         
@@ -33,7 +34,7 @@ class NASampler(object):
         assert hi_lim.shape == lo_lim.shape, 'Limits must have the same shape.'
         self.ns = ns # number of models for each step
         self.nr = nr # number of Voronoi cells to explore in each step
-        self.fn = fn   # function to minimize
+        self.fn = copy.deepcopy(fn)   # function to minimize
         self.np = 0  # number of previous samples
         self.lo_lim = lo_lim
         self.hi_lim = hi_lim
@@ -44,6 +45,15 @@ class NASampler(object):
         self.lowest_idxs = -1 * np.ones(nr, dtype=np.int)
         self.tol = self.m_len if tol == None else tol
         self.n_fitting = 0
+        self.max_iter = max_iter
+        
+    # functions to make this pickleable
+    def __getstate__(self):
+        state = copy.deepcopy(self.__dict__)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__ = state
 
     def best_models(self):
         """Row matrix of nr best models."""
@@ -55,9 +65,6 @@ class NASampler(object):
         If tol is not supplied it defaults to the attribute tol, which by
         default is the length of a model vector.
         """
-        if tol == None: tol = self.tol
-        if self.n_fitting == 0:
-            return (np.array([]), np.array([]))
         fit_idx = self.misfit < tol
         return (self.m[fit_idx], self.misfit[fit_idx])
     
@@ -74,7 +81,7 @@ class NASampler(object):
         max_chosen = max(self.chosen_misfits)
         self.n_fitting = 0
         i = 0
-        while self.n_fitting < n:
+        while i < self.max_iter and self.n_fitting < n:
             if i != 0:
                 # increase size of m
                 self.m = np.vstack((self.m, self.select_new_models()))
@@ -124,10 +131,10 @@ class NASampler(object):
         sample_idx = 0
         # Loop through all the voronoi cells
         for chosen_idx, vk in enumerate(chosen_models):
-            n_take = np.floor(self.ns / self.nr)
+            n_take = int(np.floor(self.ns / self.nr))
             if chosen_idx == 0:
                 # Give any remaining samples to our best model
-                n_take += self.ns % self.nr
+                n_take += int(np.floor(self.ns % self.nr))
             k = self.lowest_idxs[chosen_idx]
             for s in range(n_take):
                 # Current random walk location, start at voronoi cell node vk

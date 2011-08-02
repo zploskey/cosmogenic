@@ -1,0 +1,18 @@
+Last updated 13 May 2011.
+
+Setting up the development environment:
+
+For Mac OS X 10.5 and Python 2.7: 
+
+First, install setuptools
+easy_install pip
+pip install numpy
+pip install scipy
+pip install ipython
+pip install joblib
+
+Pip does not work properly for matplotlib.
+Install matplotlib from SourceForge. They had an mpkg of 1.0.1 for python
+2.7.
+
+pip install http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-4.8.4.tar.gz

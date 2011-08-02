@@ -25,19 +25,12 @@ def save_na_results(folder_path=None):
     try:
             os.system("cp *.npy %s" % folder_path)
             os.system("cp *.txt %s" % folder_path)
-            os.system("cp *.eps %s" % folder_path)
             os.system("cp *.png %s" % folder_path)
             os.system("cp *.dat %s" % folder_path)
     except OSError('Something went wrong while copying.'), e:
         print 'Got:', e.args
     else:
         print 'Results were copied into %s' % folder_path
-    
-    notes = generate_notes()
-    
-    
-def generate_notes():
-    notes = ''
 
 if __name__ == '__main__':
     save_na_results()

@@ -3,16 +3,16 @@
 Scaling functions and associated helper functions
 """
 
-import tempfile
+#import tempfile
 
 import numpy as np
-import scipy.interpolate
+from scipy.interpolate import UnivariateSpline
 
-from joblib import Memory
+#from joblib import Memory
 
-cachedir = tempfile.mkdtemp()
+#cachedir = tempfile.mkdtemp()
 
-memory = Memory(cachedir=cachedir, verbose=0)
+#memory = Memory(cachedir=cachedir, verbose=0)
 
 #@memory.cache
 def alt_to_p(z):
@@ -27,14 +27,13 @@ def alt_to_p(z):
     
     return Ps * np.exp((-gMR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
 
-@memory.cache
-def stone2000(lat, alt=None, Fsp=0.978, P=None):
+# @memory.cache
+def stone2000_sp(lat, alt=None, P=None, interp='spline'):
     """
     Inputs:
-    lat: sample latitude(s) in degrees, as a scalar or an array
-    P:   pressure(s) in hPa, scalar or array
-    Fsp: fraction of spallation reaction, defaults to 0.978
-    alt: altitude of the sample (m)
+    lat: sample latitude(s) in degrees, scalar
+    alt: altitude of the sample (m), scalar
+    P:   pressure(s) in hPa, scalar
     
     If both pressure and altitude are supplied we use pressure. If neither is
     supplied we default to sea level pressure.
@@ -44,60 +43,42 @@ def stone2000(lat, alt=None, Fsp=0.978, P=None):
             P = 1013.25
         else:
             P = alt_to_p(alt)
-        
+    
     a = np.array([31.8518,    34.3699,    40.3153,    42.0983,    56.7733,    69.0720,    71.8733])
     b = np.array([250.3193,   258.4759,   308.9894,   512.6857,   649.1343,   832.4566,   863.1927])
     c = np.array([-0.083393,  -0.089807,  -0.106248,  -0.120551,  -0.160859,  -0.199252,  -0.207069])
     d = np.array([7.4260e-5,  7.9457e-5,  9.4508e-5,  1.1752e-4,  1.5463e-4,  1.9391e-4,  2.0127e-4])
     e = np.array([-2.2397e-8, -2.3697e-8, -2.8234e-8, -3.8809e-8, -5.0330e-8, -6.3653e-8, -6.6043e-8])
 
-    # create index latitudes
-    ilats = np.arange(0, 70, 10)
+    # create index latitudes, 0 thru 90 at 10 degree intervals
+    lat_interval = 10 # deg
+    ilats = np.arange(0, 90 + lat_interval, lat_interval, dtype=int)
     
     # make sure we're dealing with positive numbers 
-    lat = np.atleast_1d(abs(lat))
-    # latitudes above 60 deg should be equivalent the scaling at 60
-    lat = np.array([x if x < 60 else 60 for x in lat])
+    lat = abs(lat)
     
-    # create ratios for 0 through 60 degrees by ten degree intervals
-    n = range(ilats.size)
-    # calculate scaling factors for index latitudes
-    f_lat = [a[x] + b[x] * np.exp(-P/150.0) + c[x] * P + d[x] * P**2 + e[x] * P**3 for x in n]
+    # number of reference latitudes
+    n_ref = a.size
+    n_lats = 10
+    # calculate scaling factors for index latitudes at sea level
+    S_lambda_idx = np.zeros(n_lats)
+    S_lambda_idx[0:n_ref] = a + b * np.exp(-P / 150.0) + c * P + d * P**2 + e * P**3
+    S_lambda_idx[n_ref:n_lats] = S_lambda_idx[n_ref-1]
 
-    # for requests with multiple latitudes we need to transpose the result
-    f_lat = np.transpose(f_lat)
+    # interpolate between the index latitude scaling factors
+    # Here we set s=0 so that the spline interpolates exactly through all the
+    # data points.
+    S_lambda = np.zeros(n_lats)
+    if interp == 'spline':
+        S_lambda = UnivariateSpline(ilats, S_lambda_idx, s=0)
+    elif interp == 'linear':
+        S_lambda = UnivariateSpline(ilats, S_lambda_idx, k=1)
+    else:
+        raise Exception('Unknown Interpolation method')
+
+    F_lambda = S_lambda(lat)
     
-    # interpolate between the index latitude scaling factors and evaluate
-    # the interpolation function at each sample latitude
-    nlats = lat.size
-    S = np.zeros(nlats)
-    idxs = range(nlats)
-    for i in idxs:
-        # deal with lone samples slightly differently
-        if f_lat.ndim == 1:
-            scale_fnc = scipy.interpolate.interp1d(ilats, f_lat)
-        else:
-            scale_fnc = scipy.interpolate.interp1d(ilats, f_lat[i])
-        S[i] = scale_fnc(lat[i])
-    
-    # muon scaling
-    mk = np.array([0.587, 0.6, 0.678, 0.833, 0.933, 1.0, 1.0])
-    fm_lat = [mk_i * np.exp((1013.25 - P) / 242.0) for mk_i in mk]
-    fm_lat = np.transpose(fm_lat)
-    # get muon scaling factors
-    
-    M = np.zeros(nlats)
-    for i in idxs:
-        # deal with lone samples slightly differently
-        if f_lat.ndim == 1:
-            magscale_fnc = scipy.interpolate.interp1d(ilats, fm_lat)
-        else:
-            magscale_fnc = scipy.interpolate.interp1d(ilats, fm_lat[i])
-        M[i] = magscale_fnc(lat[i])
-    
-    scalingfactors = S * Fsp + M * (1 - Fsp)
-    
-    return scalingfactors
+    return F_lambda
 
 """
 Elsasser et al. 1956 via Dunai's book:

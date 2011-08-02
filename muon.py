@@ -13,10 +13,29 @@ SEC_PER_YEAR = 3.15576 * 10 ** 7 # seconds per year
 ALPHA = 0.75 # empirical constant from Heisinger
 SEA_LEVEL_PRESSURE = 1013.25 # hPa
 F_NEGMU = 1 / (1.268 + 1) # fraction of negative muons (from Heisinger 2002)
+A_GRAVITY = 9.80665 # standard gravity
 
 # GENERAL MUONS SECTION
 
-def phi_vert_slhl(h):
+def phi_sl(z):
+    """
+    Heisinger et al. 2002a eq 5
+    Total muon flux in muons cm-2 s-1
+    """
+    return 2 * np.pi * phi_vert_sl(z) / (n(z) + 1)
+
+def p_fast_sl(z, n):
+    """
+    Heisinger 2002a eq 14, production rate of nuclides by fast muons @ sea level
+    z is depth in g/cm2
+    n is the a nuclide object such as Be10Qtz
+
+    Output: Fast muon production rate at depth z in units atoms / g / yr
+    """
+    return (n.sigma0 * beta(z) * phi_sl(z) * ebar(z)**ALPHA * n.Natoms 
+                     * SEC_PER_YEAR)
+
+def phi_vert_sl(h):
     """
     Vertical muon flux (Heisinger et al. 2002a eq. 1) at depth z (g / cm2)
     at sea level / high latitude in cm-2 sr-1 s-1
@@ -30,12 +49,17 @@ def phi_vert_slhl(h):
 
     # calculate the flux in units cm-2 sr-1 s-1
     flux = np.zeros(h.size)
-    i_lt_2k = np.where(h < 2000)
+    i_lt_2k = (h < 2000)
     flux[i_lt_2k] = flux_lt2k(h[i_lt_2k])
-    i_gt_2k = np.where(h >= 2000)
+    i_gt_2k = ~i_lt_2k
     flux[i_gt_2k] = flux_gt2k(h[i_gt_2k])
 
     return flux
+
+    a = 258.5 * 100**2.66
+    b = 75 * 100**1.66
+    phi_200k = (a / ((2e5 + 21000) * (((2e5 + 1000)**1.66) + b))) * np.exp(
+                -5.5e-6 * 2e5)
 
 def n(z):
     """
@@ -44,13 +68,6 @@ def n(z):
     Heisinger et al. 2002a eq. 4
     """
     return 3.21 - 0.297 * np.log((z / 100.0) + 42)  + 1.21e-5 * z
-
-def phi_slhl(z):
-    """
-    Heisinger et al. 2002a eq 5
-    Total muon flux in muons cm-2 yr-1
-    """
-    return 2 * np.pi * phi_vert_slhl(z) / (n(z) + 1)
 
 # @memory.cache
 def ebar(z):
@@ -77,14 +94,6 @@ def beta(z):
 
     return b
 
-def p_fast_slhl(z, n):
-    """
-    Heisinger 2002a eq 14, production rate of nuclides by fast muons
-    z is depth in g/cm2
-    n is the a nuclide object such as Be10Qtz
-    """
-    return n.sigma0 * beta(z) * phi_slhl(z) * ebar(z)**ALPHA * n.Natoms
-
 def p_fast(z, flux, n):
     """
     Fast neutron production rate at sample site
@@ -103,7 +112,14 @@ def R(z):
     rate of stopped muons
     from heisinger 2002b eq 6 
     """
-    return -scipy.derivative(phi_slhl, z, dx=0.1) #@UndefinedVariable
+    return -sp.derivative(phi_sl, z, dx=0.1)
+
+def R_nmu(z):
+    """
+    rate of stopped negative muons
+    heisinger 2002b eq 6 
+    """
+    return F_NEGMU * R(z)
 
 # @memory.cache
 def Rv0(z):
@@ -137,12 +153,6 @@ def Rv0(z):
 
 # PRODUCTION FROM NEGATIVE MUONS
 
-def R_nmu(z):
-    """
-    rate of stopped negative muons
-    heisinger 2002b eq 6 
-    """
-    return F_NEGMU * R(z)
 
 # GENERAL MUONS
 momentums = np.array([47.04, 56.16, 68.02, 85.1, 100, 152.7, 176.4, 221.8,
@@ -190,72 +200,70 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     Total production rate from muons
     
     Takes:
-    z: a vector of depths
-    h: altitude in meters or the atmospheric pressure in hPa at surface
+    z: a scalar or vector of sample depths in g/cm2
+    h: altitude in meters or the atmospheric pressure in hPa at surface, scalar
     n: a nuclide object containing nuclide specific information
     is_alt (optional): makes h be treated as an altitude in meters
     
     Returns the total production rate from muons in atoms
     """
     z = np.atleast_1d(z)
-    h = np.atleast_1d(h)
-
-    if z.size != h.size and h.size != 1:
-        raise ValueError("z and h must be arrays of the same length or h must "
-                         " be a scalar")
 
     # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
         h = scaling.alt_to_p(h)
     
-    # calculate the atmospheric depth of the sample
-    H = 1.019716 * (SEA_LEVEL_PRESSURE - h) # g/cm2
+    # calculate the atmospheric depth of each sample in g/cm2
+    deltaH = 10 * (SEA_LEVEL_PRESSURE - h) / A_GRAVITY
     
     # find the stopping rate of vertical muons at SLHL
     R_v0 = Rv0(z)
     
     # calculate vertical muon stopping rate at the site
     L = LZ(z) # save this for later calculations
-    R_v = R_v0 * np.exp(H / L) # vertical muons stopping rate at site
+    R_v = R_v0 * np.exp(deltaH / L) # vertical muons stopping rate at site
 
-    phi_v0 = phi_vert_slhl(z)
+    phi_v0 = phi_vert_sl(z)
 
+    # Our (site-specific) vertical muon stopping rate
+    def Rv(depth):
+        return Rv0(depth) * np.exp(deltaH / LZ(depth))
+    
     # integrate the stopping rate to get the vertical muon flux at depth z
     # at the sample site
     phi_v = np.zeros(z.size)
-    int_err = phi_v.copy()
+    int_err = np.zeros(z.size)
     tol = phi_v0 * 1e-4 # absolute error tolerance
-    lim = 2e5+1 # limit of our integration
+    lim = 2e5 # limit of our integration
     for i, zi in enumerate(z):
-        if H.size == 1:
-            pressure = H
-        else:
-            pressure = H[i]
-        
-        def Rv(z):
-            return Rv0(z) * np.exp(pressure / L[i])
-        
         phi_v[i], int_err[i] = scipy.integrate.quad(Rv, zi, lim, epsabs=tol[i])
     
     # add in the flux below 2e5 g / cm2, assumed to be constant
-    phi_v += phi_vert_slhl(2e5)
+    a = 258.5 * 100**2.66
+    b = 75 * 100**1.66
+    phi_200k = (a / ((2e5 + 21000) * (((2e5 + 1000)**1.66) + b))) * np.exp(
+                -5.5e-6 * 2e5)
+    phi_v += phi_200k
+    print phi_200k
+    print phi_vert_sl(2e5)
     
-    nofz = n(z + H) # calculate exponent for total depth (atmosphere + rock)
-    dndz = (-0.297 / 100.0) / ((z + H) / 100.0 + 42) + 1.21e-5 # d(n(z))/dz
+    nofz = n(z + deltaH) # calculate exponent for total depth (atmosphere + rock)
+    dndz = (-0.297 / 100.0) / ((z + deltaH) / 100.0 + 42) + 1.21e-5 # d(n(z))/dz
     
     # find total flux of muons at the site
     phi = 2 * np.pi * phi_v / (nofz + 1) # muons/cm2/s
     phi *= SEC_PER_YEAR # convert to muons/cm2/yr
     
     # find total muon stopping rate of negative muons/g/s
-    # R = fraction_of_negative_muons * derivative(tot_muon_flux(z+H))
-    R = F_NEGMU * 2 * np.pi * (R_v / (nofz + 1) + phi_v * (nofz + 1)**-2 * dndz)
+    # R = fraction_of_negative_muons * derivative(tot_muon_flux(z+deltaH))
+    R = F_NEGMU * 2 * np.pi * ((R_v / (nofz + 1)) + (phi_v * dndz 
+                                / (nofz + 1)**2))
     R *= SEC_PER_YEAR # convert to negative muons/g/yr
     
     # get nuclide production rates
     (P_fast, Beta, Ebar) = p_fast(z, phi, nuc) # for fast muons
     P_neg = R * nuc.k_neg # and negative muons
-    P_tot = P_fast + P_neg # total production from muons, atoms/g/yr
+    P_mu_tot = P_fast + P_neg # total production from muons, atoms/g/yr
     
     if not full_data:
         return P_tot
@@ -273,7 +281,9 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
                 'P_fast': P_fast,
                 'P_neg': P_neg,
                 'LZ': L,
-                'P_tot': P_tot,}
+                'P_mu_tot': P_mu_tot,
+                'deltaH': deltaH,
+                }
                 
 if __name__ == '__main__':
     import nuclide

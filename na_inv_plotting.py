@@ -31,7 +31,7 @@ dz_true_m = con['dz_true_m']
 # get data for plotting a depth vs time curve
 t_true, z_true = sim.depth_v_time(con['t_gl'], con['t_int'], 
                                   con['t_postgl'], dz_true_m, 
-				                  n_gl=con['n_gl'])
+                                  n_gl=con['n_gl'])
 dvt_len = 2 * (con['n_gl'] + 1)
 fit_t = np.zeros((misfits.size, dvt_len))
 fit_z = np.empty((misfits.size, dvt_len))
@@ -55,6 +55,10 @@ plt.ylabel('Depth (m)')
 plt.title('Past depth of the surface sample')
 plt.show()
 
+figname = 'target_history'
+plt.savefig(figname + '.svg')
+plt.savefig(figname + '.png')
+
 # zoft plot including all the close exposure histories
 many_zoft_fig = plt.figure(2)
 many_zoft_ax = many_zoft_fig.add_subplot(111)
@@ -73,7 +77,7 @@ plt.title('Past depth of the surface sample')
 plt.show()
 
 figname = 'best_histories'
-plt.savefig(figname + '.eps')
+plt.savefig(figname + '.svg')
 plt.savefig(figname + '.png')
 
 ###########################################
@@ -94,8 +98,8 @@ plt.ylabel('Depth (m)')
 plt.title('Synthetic $^{10}$Be Concentration Profile')
 plt.show()
 
-figname = 'target_history'
-plt.savefig(figname + '.eps')
+figname = 'target_conc'
+plt.savefig(figname + '.svg')
 plt.savefig(figname + '.png')
 
 ## calculate measurement error
@@ -116,6 +120,10 @@ plt.ylabel('Depth (m)')
 plt.title('Synthetic and Perturbed $^{10}$Be Concentration Profiles')
 plt.show()
 
+figname = 'perturbed_conc'
+plt.savefig(figname + '.svg')
+plt.savefig(figname + '.png')
+
 # concentration profile with best fit
 best_conc_fig = plt.figure(5)
 best_conc_ax = best_conc_fig.add_subplot(111)
@@ -127,10 +135,7 @@ plt.errorbar(conc_meas, z_m,
              label='Target + Error')
 min_misfit = min(misfits)
 best_m = ms[misfits == min_misfit].T * 100.0 * con['rho']
-n_gl = con['n_gl']
-best_tgl = np.ones(n_gl) * con['t_gl']
-best_tint = np.ones(n_gl) * con['t_int']
-best_conc = sim.multiglaciate(best_m, best_tgl, best_tint, con['t_postgl'],
+best_conc = sim.multiglaciate(best_m, con['t_gl'], con['t_int'], con['t_postgl'],
                 con['sample_depths'], con['nuclide'], p, n_gl=con['n_gl'])
 plt.semilogx(best_conc, z_m, '-', label='Best fit (chi2=%0.2f)' % min_misfit)
 best_conc_ax.invert_yaxis()
@@ -141,5 +146,5 @@ plt.title('$^{10}$Be Depth Profiles')
 plt.show()
 
 figname = 'best_conc'
-plt.savefig(figname + '.eps')
+plt.savefig(figname + '.svg')
 plt.savefig(figname + '.png')
