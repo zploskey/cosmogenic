@@ -16,7 +16,7 @@ import numpy as np
 class NASampler(object):
     """ Sample a parameter space using the Neighborhood Algorithm."""
     
-    def __init__(self, ns, nr, fn, lo_lim, hi_lim, tol=None, max_iter=1000):        
+    def __init__(self, ns, nr, fn, lo_lim, hi_lim, tol=None, max_eval=10000):        
         """Create an NASampler to sample a parameter space using the
         Neighborhood algorithm.
         
@@ -45,7 +45,7 @@ class NASampler(object):
         self.lowest_idxs = -1 * np.ones(nr, dtype=np.int)
         self.tol = self.m_len if tol == None else tol
         self.n_fitting = 0
-        self.max_iter = max_iter
+        self.max_eval = max_eval
         
     # functions to make this pickleable
     def __getstate__(self):
@@ -65,6 +65,8 @@ class NASampler(object):
         If tol is not supplied it defaults to the attribute tol, which by
         default is the length of a model vector.
         """
+        if tol == None:
+            tol = self.tol
         fit_idx = self.misfit < tol
         return (self.m[fit_idx], self.misfit[fit_idx])
     
@@ -72,17 +74,17 @@ class NASampler(object):
         """Generate an ensemble of at least n models that fit to tolerance.
         
         Keyword Arguments:
-        n -- # of fitting models to find
+        n -- # of models to find
         """
         assert n > 0, 'n must be at least 1'        
         
         start_time = time.time()
         print 'Start time:', time.asctime(time.localtime(start_time))
         max_chosen = max(self.chosen_misfits)
-        self.n_fitting = 0
-        i = 0
-        while i < self.max_iter and self.n_fitting < n:
-            if i != 0:
+        it = 1 # iteration number
+        idx = 0
+        while (n_eval < self.max_eval) and self.n_fitting < n:
+            if it != 1 and self.np != 0:
                 # increase size of m
                 self.m = np.vstack((self.m, self.select_new_models()))
                 self.misfit = np.hstack((self.misfit, np.zeros(self.ns)))
@@ -90,7 +92,7 @@ class NASampler(object):
             # record the best (lowest) ones so far
             for j in range(self.ns):
                 idx = self.np + j
-                print "Got to iteration", str(i+1) + ", index", idx
+                print "Got to iteration", str(it) + ", index", idx
                 self.misfit[idx] = self.fn(self.m[idx])
                 if self.misfit[idx] < max_chosen: 
                     old_low_idx = np.where(self.chosen_misfits ==
@@ -105,8 +107,8 @@ class NASampler(object):
         end_time = time.time()
         print 'End time:', time.asctime(time.localtime(end_time))
         elapsed_time = end_time - start_time
-        print 'Took', elapsed_time, 'seconds.'
-        print 'Took', elapsed_time / 60, 'minutes.'
+        print 'Took', elapsed_time, 's (', elapsed_time % 60, 'min,', (elapsed_time 
+              % 60), 's)'
         return True
 
     def generate_random_models(self):

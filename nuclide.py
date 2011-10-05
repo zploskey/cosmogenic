@@ -43,9 +43,7 @@ class Be10Qtz():
         # Balco's 2008 paper. This number apparently includes production from
         # fast muons, so I have opted to subtract them here.
         p_mu_dict = muon.P_mu_total(z=0, h=0, nuc=self, full_data=True)
-        print 'p_mu_dict[P_fast] =', p_mu_dict['P_fast']
         self.P0 = 4.49 - p_mu_dict['P_fast']
-        print 'P0 =', self.P0
     
     def relative_error(self, concentration):
         return 0.9 * concentration**(-0.29402281)

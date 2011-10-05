@@ -1,6 +1,7 @@
 import numpy as np
 
 import production
+import muon
 
 def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
                   postgl_shielding=0):
@@ -30,8 +31,11 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
     """
     if n_gl is not None:
         ngl = n_gl
-        t_gl = np.ones(n_gl) * t_gl
-        t_intergl = np.ones(n_gl) * t_intergl
+        t_gl = np.ones(ngl) * t_gl
+        t_intergl = np.ones(ngl) * t_intergl
+        dz = np.atleast_1d(dz)
+        if dz.size == 1:
+            dz = np.ones(ngl) * dz
     else:
         ngl = dz.size
 
@@ -47,7 +51,6 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
         t_begint = t_endint + t_intergl[i]
         conc += expose(z_cur, t_begint, t_endint, n, p)
     return conc
-
 
 def depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     """ Returns a tuple of times and depths of a surface sample.
@@ -157,22 +160,63 @@ def fwd_profile_steps(z0, z_removed, t, n, h, lat):
     """
     L = n.LAMBDA
     N = np.zeros(len(z0))
-    Ns = np.zeros( (len(t) + 1, len(z0)) )
     t_beg = t[2::2]
     t_end = t[1::2]
+    Ns = np.zeros( (len(t_end) + 1, len(z0)) )
+    z_cur = z0.copy() + z_removed.sum()
+    idepth = np.add.accumulate(z_removed)
+    npts = 200
+    
+    for i in range(1, z_removed.size):
+        # begin interglacial period
+        depths = np.linspace(0, z0[-1] + idepth[-i], npts)
+        N *= np.exp(-L * tg) # radioactive decay
+        Nexp = sim.simple_expose(depths, ti, be10, p)
+        N += Nexp
+        # fnc = sp.interpolate.interp1d(depths, N)
+        
+        depthsm = depths / rho / 100.0
+        ln = plt.semilogx(N, depthsm, lw=2, color='lightslategray')
+    #    leg.append('Ig ' + str(i))
+        lines = np.append(lines, ln)
 
+        # begin glaciation
+        N *= np.exp(-be10.LAMBDA * tg) # isotopic decay
+        # erode the top of the profile away
+        depths -= z_removed[-i]
+        nofz = interpolate.interp1d(depths, N) # interpolate conc. curve
+        depths = np.linspace(0, depths[-1], 500)
+        N = nofz(depths)
+
+        depthsm = depths / rho / 100.0
+        ln = plt.semilogx(N, depthsm, color='lightslategray', lw=2)
+        lines = np.append(lines, ln)
+    #    leg.append('Gl ' + str(i))
+
+        # account for recent cosmic ray exposure
+        Nhol = sim.simple_expose(depths, tH, be10, alt, lat) 
+        N *= np.exp(-be10.LAMBDA * tH)
+        N += Nhol
+        ln = plt.semilogx(N, depthsm, color='r', lw=2)
+        lines = np.append(lines, ln)
+    
     # Add nuclides formed postglacially
-    z_cur = z0.copy()
     for i, dz in enumerate(z_removed):
-        z_cur += dz
+        ind = -(i + 1)
+        dt = t_beg[ind] - t_end[ind]
+        # dt += t_beg[ind - 1]
+        buildup = simple_expose_slow(z0, dt, n, h, lat)
+        Ndec = N * np.exp(-L * dt)
+        Ns[i] = N
+        z_cur -= dz
         p = production.P_tot(z_cur, h, lat, n)
         buildup =  (p / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
         N += buildup
-        Ns[i,:] = N.copy().T
+        Ns[-i + 1, :] = N.copy().T
     Nhol = simple_expose_slow(z0, t[0], n, h, lat)
     N += Nhol
-    Ns[-1,:] = N
-    
+
+    Ns[0, :] = N + Nhol
     return Ns
 
 def steady_multiglaciate(model, constraints, zvst=False):
@@ -206,10 +250,40 @@ def steady_multiglaciate(model, constraints, zvst=False):
     else:
         return conc_true
 
-
 def rand_erosion_hist(avg, sigma, n):
     """
     Generates a sequence of n numbers randomly distributed about avg_dz and
     standard deviation approximately equal to sigma.
     """
     return np.random.normal(avg, sigma, n)
+
+def steady_erosion(z, p_sp, p_fmu, p_negmu, eros_rate, nuc, t_exp, t):
+    """
+    General formula for accumulation of nuclides in an eroding surface
+    Dunai's book eq. 4.10 in 1st edition
+    """
+    p = production
+    z0 = eros_rate * t_exp + z # initial shielding depth, g/cm**2
+
+    # spallation
+    L_sp = p.LAMBDA_h
+    spal = (p_sp / (nuc.LAMBDA + eros_rate / L_sp))
+    spal *= np.exp((-z0 + eros_rate * t) / L_sp)
+    spal *= (1 - np.exp(-(nuc.LAMBDA + eros_rate / L_sp) * t))
+    # fast muons
+    L_fmu = p.LAMBDA_fast
+    fmu = (p_fmu / (nuc.LAMBDA + eros_rate / L_fmu))
+    fmu *= np.exp((-z0 + eros_rate * t) / L_fmu)
+    fmu *= (1 - np.exp(-(nuc.LAMBDA + eros_rate / L_fmu) * t))
+    # slow negative muons, using Fabel and Harbor 2004 constants
+    L_negmu = muon.LZ(z)
+    #A = np.array([0.096, 0.021])
+    #L_negmu = np.array([
+    #negmu = np.zeros(
+    #for j in range(2):
+    negmu = (p_negmu / (nuc.LAMBDA + eros_rate / L_negmu))
+    negmu *= np.exp((-z0 - eros_rate * t) / L_negmu)
+    negmu *= (1 - np.exp(-(nuc.LAMBDA + eros_rate / L_negmu) * t))
+    
+    conc = spal + fmu + negmu
+    return conc

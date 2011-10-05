@@ -20,7 +20,7 @@ constraints = {
     't_gl':           15000,
     't_int':          85000,
     't_postgl':       15500,
-    'postgl_shielding': 50, # postglacial shielding correction (for snow/till cover)
+    'postgl_shielding': 58, # postglacial shielding correction (for snow/till cover)
     'nuclide':        nuclide.Be10Qtz(),
     'n_gl':           30,     # number of glaciations
     # define our parameters for the Neighborhood Algorithm
@@ -103,9 +103,8 @@ def fn(m):
 
 # concs, errors, models
 
-sampler = na.NASampler(con['ns'], con['nr'], fn, lo_lim, hi_lim, tol=dof, max_iter=200) 
-                        #, max_iter=int(np.floor(2000/con['ns'])))
-sampler.generate_ensemble(con['ensemble_size'])
+sampler = na.NASampler(con['ns'], con['nr'], fn, lo_lim, hi_lim, tol=dof) 
+sampler.generate_ensemble()
 tol = np.max([dof, np.min(sampler.misfit)]) + 0.05 # just our best few if didn't meet tolerance
 fit_idx = sampler.misfit < tol
 ms = np.atleast_2d(sampler.m[fit_idx])

@@ -244,8 +244,6 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     phi_200k = (a / ((2e5 + 21000) * (((2e5 + 1000)**1.66) + b))) * np.exp(
                 -5.5e-6 * 2e5)
     phi_v += phi_200k
-    print phi_200k
-    print phi_vert_sl(2e5)
     
     nofz = n(z + deltaH) # calculate exponent for total depth (atmosphere + rock)
     dndz = (-0.297 / 100.0) / ((z + deltaH) / 100.0 + 42) + 1.21e-5 # d(n(z))/dz
@@ -266,7 +264,7 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     P_mu_tot = P_fast + P_neg # total production from muons, atoms/g/yr
     
     if not full_data:
-        return P_tot
+        return P_mu_tot
     else:
         # flux of vertical muons at sea level/high latitude
         return {'phi_v0': phi_v0,

@@ -23,15 +23,16 @@ def save_na_results(folder_path=None):
     else:
         raise Exception('Directory already exists; %s' % folder_path)
     try:
-            os.system("cp *.npy %s" % folder_path)
-            os.system("cp *.txt %s" % folder_path)
-            os.system("cp *.png %s" % folder_path)
-            os.system("cp *.svg %s" % folder_path)
-            os.system("cp *.dat %s" % folder_path)
+        os.system("mv *.npy %s" % folder_path)
+        os.system("mv *.txt %s" % folder_path)
+        os.system("mv *.png %s" % folder_path)
+        os.system("mv *.svg %s" % folder_path)
+        os.system("mv *.eps %s" % folder_path)
+        os.system("mv *.dat %s" % folder_path)
     except OSError('Something went wrong while copying.'), e:
         print 'Got:', e.args
     else:
-        print 'Results were copied into %s' % folder_path
+        print 'Results were moved into %s' % folder_path
 
 if __name__ == '__main__':
     save_na_results()
