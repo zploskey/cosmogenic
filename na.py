@@ -150,7 +150,6 @@ class NASampler(object):
                 # Give any remaining samples to our best model
                 n_take += int(np.floor(self.ns % self.nr))
             k = self.lowest_idxs[chosen_idx]
-            notk = np.where(np.arange(self.np) != k)
             d2_prev_ax = np.zeros(self.np)
             # Vector of perpendicular distances to cell boundaries along the
             # current axis (initially from vk)
@@ -166,11 +165,11 @@ class NASampler(object):
                     d2 += d2_prev_ax - d2_this_ax
                     dk2 = d2[chosen_idx]
                     # Find distances along axis i to all cell edges
-                    vji = m[notk, i]
-                    x = 0.5 * (vk[i] + vji + (dk2 - d2[notk]) / (vk[i] - vji))
+                    vji = m[:, i]
+                    x = 0.5 * (vk[i] + vji + (dk2 - d2) / (vk[i] - vji))
                     # Find the 2 closest points to our chosen node on each side
-                    li = np.max(np.hstack((self.lo_lim, x[x <= xA[i]])))
-                    ui = np.min(np.hstack((self.hi_lim, x[x >= xA[i]])))
+                    li = np.nanmax(np.hstack((self.lo_lim, x[x <= xA[i]])))
+                    ui = np.nanmin(np.hstack((self.hi_lim, x[x >= xA[i]])))
                     # Randomly sample the interval and move there
                     xA[i] = (ui - li) * np.random.random_sample() + li
                     d2_prev_ax = d2_this_ax

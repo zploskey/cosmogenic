@@ -32,8 +32,8 @@ con = {
     # define our parameters for the Neighborhood Algorithm
     'ns':             150, # number of samples each iteration
     'nr':             125,  # number of voronoi cells that we explore in each iteration
-    'ensemble_size':  2000,
-    'n_best':         200,
+    'ensemble_size':  10000,
+#    'n_best':         200,
     'interp_pts': 500,
     'tol_reduced_chi2': 2,
 }
