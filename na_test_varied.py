@@ -1,6 +1,7 @@
 from __future__ import division
 
 import numpy as np
+import numpy.random
 import matplotlib.pyplot as plt
 import joblib
 
@@ -10,16 +11,17 @@ import na
 import production
 import save_na_results
 
+# constraints on the problem, central data storage
 con = {
     'n_samples':      20,
-    'n_exact_depths': 8,
+    'n_exact_depths': 1,
     'n_gl':           20,     # number of glaciations
     'bottom_depth_m': 10,
     'alt':            220,   # surface elevation, assumed constant, m
     'lat':            44.544,
     'rho':            2.67,  # g/cm2
     # define max allowable parameter values to normalize to
-    'max_dz_m':       12,    # max m of rock eroded each glaciation
+    'max_dz_m':       15,    # max m of rock eroded each glaciation
     'min_dz_m':       0.01,  # m
     't_gl':           15000,
     't_int':          85000,
@@ -28,11 +30,12 @@ con = {
     'nuclide':        nuclide.Be10Qtz(),
 
     # define our parameters for the Neighborhood Algorithm
-    'ns':             30, # number of samples each iteration
-    'nr':             20,  # number of voronoi cells that we explore in each iteration
-    'ensemble_size':  1000,
+    'ns':             150, # number of samples each iteration
+    'nr':             125,  # number of voronoi cells that we explore in each iteration
+    'ensemble_size':  2000,
+    'n_best':         200,
     'interp_pts': 500,
-    'tol_reduced_chi2': 4,
+    'tol_reduced_chi2': 2,
 }
 con['n_params'] = con['n_exact_depths'] + 1
 con['dof'] = con['n_samples'] - con['n_params'];
@@ -45,12 +48,11 @@ con['sample_depths_m'] = np.logspace(0, np.log(con['bottom_depth_m'] + 1), con['
 con['sample_depths'] = con['sample_depths_m'] * 100 * con['rho']
 
 # Construct the target erosion history
-# made using sim.rand_erosion_hist(6, 3, 20)
-con['dz_m'] = np.array([  9,   2,   4,  2,
-        0.2,   0.3,   4,   0.3,
-        3,   3.4,   8 ,   7,
-        2,   3.6,   3.3,   6,
-        5 ,   1.8,  2.5,   4])
+con['dz_m'] = np.array([  4.5,   3.5,   2.5,  1.5,
+        1,   1.2,   0.5,   0.3,
+        0.7,   0.5,   0.4 ,   1,
+        1.2,   0.2,   0.3,   0.4,
+        0.25 ,   0.75,  1.2,   0.8])
 con['dz'] = con['dz_m'] * 100 * con['rho']
 
 # create points for the true erosion history model
@@ -73,12 +75,14 @@ con['t'], con['z_true'] = sim.depth_v_time(con['t_gl'], con['t_int'], con['t_pos
 
 # interpolate a production function
 max_possible_depth = con['n_gl'] * con['max_dz'] + con['bottom_depth']
+
+# if production file exists already
 p = production.interpolate_P_tot(max_possible_depth, 
                                  npts=con['interp_pts'], alt=con['alt'],
                                  lat=con['lat'], n=con['nuclide'])
 
 # calculate the true concentration profile (w/ many points, not sample depths)
-z_true_manypts = np.linspace(0, con['bottom_depth'])
+z_true_manypts = np.linspace(0, con['bottom_depth'], 200)
 C_true_manypts = sim.multiglaciate(con['dz'], con['t_gl'], con['t_int'], 
                              con['t_postgl'], z_true_manypts, con['nuclide'], p,
                              con['n_gl'], 
@@ -136,6 +140,7 @@ hi_lim = np.ones(con['n_params'])
 lo_lim = np.zeros(con['n_params'])
 
 concs = []
+indep_errs = []
 SAVE_CONCENTRATION_DATA = True
 def fn(m):
     """ Our objective function, takes an ndarray m that contains depths removed
@@ -143,16 +148,20 @@ def fn(m):
     """
     if SAVE_CONCENTRATION_DATA:
         global concs
+        global indep_errs
     raw_dz = m * (con['max_dz'] - con['min_dz']) + con['min_dz']
     dz = np.ones(con['n_gl']) * raw_dz[-1]
     dz[0:con['n_exact_depths']] = raw_dz[0:-1]
     conc = sim.multiglaciate(dz, con['t_gl'], con['t_int'], con['t_postgl'],
                 con['sample_depths'], con['nuclide'], p, n_gl=con['n_gl'],
                 postgl_shielding=con['postgl_shielding'])
+
+    error = chi2(conc, con['C_meas'], con['C_meas_err'])
+    print "Chi**2:", error
+
     if SAVE_CONCENTRATION_DATA:
         concs.append(conc)
-    error = chi2(conc, con['C_meas'], con['sigma'])
-    print "Chi**2:", error
+        indep_errs.append(error)
     return error
 
 # adjust our error tolerance for a fitting model upwards if error from the
@@ -163,36 +172,61 @@ if con['permutation_error'] > con['tol_reduced_chi2']:
 else:
     con['actual_chi2_tol'] = con['tol_reduced_chi2']
 
-sampler = na.NASampler(con['ns'], con['nr'], fn, lo_lim, hi_lim, tol=con['actual_chi2_tol'] )
+# Run the inversion
+sampler = na.NASampler(con['ns'], con['nr'], fn, lo_lim, hi_lim,
+                       tol=con['actual_chi2_tol'],
+                       min_eval=con['ensemble_size'])
 sampler.generate_ensemble(con['ensemble_size'])
-ms, misfits = sampler.fitting_models()
+
 errors = sampler.misfit
 models = sampler.m * (con['max_dz'] - con['min_dz']) + con['min_dz']
+models_m = models / con['rho'] / 100.0
+
+#ms, misfits, best_idx = sampler.best_models(con['n_best'])
+#ms_m = (ms * (con['max_dz'] - con['min_dz']) + con['min_dz']) / con['rho'] / 100.0
+
+good_idx = errors < con['actual_chi2_tol']
+misfits = errors[good_idx].copy()
+ms = models[good_idx].copy()
+ms_m = models_m[good_idx].copy()
+# extract models that fit to within tolerance
+#fit_ms, fit_errs = sampler.fitting_models(con['actual_chi2_tol'])
+#fit_idx = errors < con['actual_chi2_tol']
+#fitting_models_m = models_m[fit_idx].copy()
+#fitting_misfits = errors[fit_idx].copy()
+
+# from those, randomly select our desired number of models to plot
+#if con['n_best'] < len(fitting_misfits):
+#    idx = np.random.permutation(np.arange(len(fitting_misfits)
+#                                            ))[0:con['n_best']]
+#    ms_m = fitting_models_m[idx].copy()
+#    misfits = fitting_misfits[idx].copy()
+#else:
+#ms_m = fitting_models_m.copy()
+#misfits = fitting_misfits.copy()
+
 vecs_to_save = ('concs', 'errors', 'models', 'ms', 'misfits')
 for v in vecs_to_save:
     np.savetxt(v + '.txt', eval(v))
-
-ms_denorm = ms * (con['max_dz'] - con['min_dz']) + con['min_dz']
-# denormalize the models
-ms_m = ms_denorm / con['rho'] / 100.0
 
 dvt_len = 2 * (con['n_gl'] + 1)
 fit_t = np.zeros((misfits.size, dvt_len))
 fit_z = np.empty((misfits.size, dvt_len))
 for i in range(misfits.size):
-    cur_m = np.ones(con['n_gl']) * ms_m[i][-1]
+    cur_m = np.ones(con['n_gl']) * ms_m[i, -1]
     cur_m[0:con['n_params']] = ms_m[i]
     fit_t[i, :], fit_z[i, :] = sim.depth_v_time(con['t_gl'], con['t_int'],
                                                 con['t_postgl'], cur_m, 
                                                 n_gl=con['n_gl'])
 
-min_misfit = np.min(misfits)
-best_m_m = ms_m[misfits == min_misfit][0]
+min_idx = np.argmin(errors)
+best_m_m = models_m[min_idx].copy()
 full_best_m = np.ones(con['n_gl']) * best_m_m[-1]
-full_best_m[0:con['n_params']] = best_m_m
+full_best_m[0:con['n_params']] = best_m_m.copy()
 _, best_fit_z = sim.depth_v_time(con['t_gl'], con['t_int'],
                                           con['t_postgl'], full_best_m,
                                           n_gl=con['n_gl'])
+
 
 #############################
 # PLOTTING                  #
@@ -204,11 +238,14 @@ ax = zoft_fig.add_subplot(111)
 # make the brightness of each curve dependent on how low its error was
 #alphas = 1 - (misfits / con['tol_reduced_chi2'])
 #alpha = 0.5
-for i in range(misfits.size):
-    plt.plot(fit_t[i] / 1e6, fit_z[i], color='0.5') # , alpha=alphas[i])
 
-plt.plot(con['t'] * 1e-6, con['z_true'], 'k', lw=2)
-plt.plot(con['t'] * 1e-6, best_fit_z, 'r', lw=2)
+shade_num = 0.4 if misfits[i] < con['tol_reduced_chi2'] else 0.8
+shade = "%0.2f" % round(shade_num, 2)
+for i in range(misfits.size):
+    plt.plot(fit_t[i] / 1e6, fit_z[i], color=shade)
+
+plt.plot(con['t'] * 1e-6, con['z_true'], 'k', lw=3)
+plt.plot(con['t'] * 1e-6, best_fit_z, 'r', lw=3)
 plt.xlim((0, con['t'][-1] * 1e-6))
 ax.invert_yaxis()
 ax.invert_xaxis()
@@ -254,7 +291,7 @@ ax.set_ylabel('Depth (m)')
 ax.legend(loc='lower right')
 
 # Record the chi squared value 
-chi2_annotation = '$\chi^2_\\nu$' + ' = %s' % np.round(min_misfit,2)
+chi2_annotation = '$\chi^2_\\nu$ = %0.2f' % np.round(errors[min_idx], 2)
 ax.annotate(chi2_annotation, xy=(0.75, 0.5), xycoords='axes fraction',
                 horizontalalignment='center', verticalalignment='center')
 
@@ -262,9 +299,23 @@ figname = 'conc'
 for ext in ('.eps', '.svg', '.png'):
     plt.savefig(figname + ext)
 
+
+# sampling distribution plotting code
+sampling_fig = plt.figure()
+ax = sampling_fig.add_subplot(111)
+plt.plot(models_m[:, 0], models_m[:, 1], 'k.', markersize=2)
+plt.plot(con['dz_m'][0], np.mean(con['dz_m'][1:]), 'xb', label='True', markeredgewidth=3, markersize=8, lw=2)
+plt.plot(best_m_m[0], best_m_m[1], '+r', label='best model', markeredgewidth=3, markersize=8, lw=2)
+plt.xlabel('Erosion Depth, Last glaciation (m)')
+plt.ylabel('Prior representative erosion depth')
+plt.show()
+
+figname = 'sampling_dist'
+for ext in ('.svg', '.png'):
+    plt.savefig(figname + ext)
+
 joblib.dump(con, 'constraints.dat')
 f = open('constraints.txt', 'w')
 f.write(str(con))
 f.close()
 save_na_results.save_na_results()
-
