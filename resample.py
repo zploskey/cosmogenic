@@ -30,8 +30,8 @@ dof = con['dof']
 d = m.shape[1]
 limits = (np.ones(d) * con['min_dz'], np.ones(d) * con['max_dz'])
 
-Nw = 2 # number of walks
-n = 2 # number of samples to take along each walk
+Nw = 100 # number of walks
+n = 1000 # number of samples to take along each walk
 
 mr = na.resample(m, x2v, dof, Nw, n, limits, n_jobs=2)
 np.savetxt(os.path.join(data_dir, outfile), mr)
