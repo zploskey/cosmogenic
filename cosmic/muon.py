@@ -4,6 +4,7 @@ from __future__ import division
 
 import numpy as np
 import scipy as sp
+import scipy.misc
 import scipy.integrate
 import scipy.interpolate
 
@@ -69,7 +70,6 @@ def n(z):
     """
     return 3.21 - 0.297 * np.log((z / 100.0) + 42)  + 1.21e-5 * z
 
-# @memory.cache
 def ebar(z):
     """
     Mean rate of change of energy with depth
@@ -80,7 +80,6 @@ def ebar(z):
     mean_energy += 50.7 * (1 - np.exp(-h * 5.05e-5))
     return mean_energy
 
-# @memory.cache
 def beta(z):
     """
     Heisinger et al. 2002a approximation of the beta function (eq 16)
@@ -112,7 +111,7 @@ def R(z):
     rate of stopped muons
     from heisinger 2002b eq 6 
     """
-    return -sp.derivative(phi_sl, z, dx=0.1)
+    return -sp.misc.derivative(phi_sl, z, dx=0.1)
 
 def R_nmu(z):
     """
@@ -168,7 +167,7 @@ max_range = ranges[-1]
 log_LZ_interp_base = sp.interpolate.interp1d(np.log(ranges), np.log(momentums))
 
 def log_LZ_interp(z):
-    slope = sp.derivative(log_LZ_interp_base, np.log(212899),
+    slope = sp.misc.derivative(log_LZ_interp_base, np.log(212899),
             dx=2e-6)
     bad_idxs = z > np.log(max_range)
     good_idxs = np.logical_not(bad_idxs)

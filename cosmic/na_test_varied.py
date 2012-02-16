@@ -14,7 +14,7 @@ import save_na_results
 # constraints on the problem, central data storage
 con = {
     'n_samples':      20,
-    'n_exact_depths': 1,
+    'n_exact_depths': 3,
     'n_gl':           20,     # number of glaciations
     'bottom_depth_m': 10,
     'alt':            220,   # surface elevation, assumed constant, m
@@ -30,13 +30,14 @@ con = {
     'nuclide':        nuclide.Be10Qtz(),
 
     # define our parameters for the Neighborhood Algorithm
-    'ns':             150, # number of samples each iteration
-    'nr':             125,  # number of voronoi cells that we explore in each iteration
+    'ns':             50, # number of samples each iteration
+    'nr':             25,  # number of voronoi cells that we explore in each iteration
     'ensemble_size':  10000,
 #    'n_best':         200,
     'interp_pts': 500,
     'tol_reduced_chi2': 2,
 }
+
 con['n_params'] = con['n_exact_depths'] + 1
 con['dof'] = con['n_samples'] - con['n_params'];
 con['bottom_depth'] = con['bottom_depth_m'] * 100 * con['rho']
@@ -299,22 +300,19 @@ figname = 'conc'
 for ext in ('.eps', '.svg', '.png'):
     plt.savefig(figname + ext)
 
-
 # sampling distribution plotting code
-sampling_fig = plt.figure()
-ax = sampling_fig.add_subplot(111)
-plt.plot(models_m[:, 0], models_m[:, 1], 'k.', markersize=2)
-plt.plot(con['dz_m'][0], np.mean(con['dz_m'][1:]), 'xb', label='True', markeredgewidth=3, markersize=8, lw=2)
-plt.plot(best_m_m[0], best_m_m[1], '+r', label='best model', markeredgewidth=3, markersize=8, lw=2)
-plt.xlabel('Erosion Depth, Last glaciation (m)')
-plt.ylabel('Prior representative erosion depth')
-plt.show()
+#sampling_fig = plt.figure()
+#ax = sampling_fig.add_subplot(111)
+#plt.plot(models_m[:, 0], models_m[:, 1], 'k.', markersize=2)
+#plt.plot(con['dz_m'][0], np.mean(con['dz_m'][1:]), 'xb', label='True', markeredgewidth=3, markersize=8, lw=2)
+#plt.plot(best_m_m[0], best_m_m[1], '+r', label='best model', markeredgewidth=3, markersize=8, lw=2)
+#plt.xlabel('Erosion Depth, Last glaciation (m)')
+#plt.ylabel('Prior representative erosion depth')
 
-figname = 'sampling_dist'
-for ext in ('.svg', '.png'):
-    plt.savefig(figname + ext)
+#figname = 'sampling_dist'
+#for ext in ('.svg', '.png'):
+#    plt.savefig(figname + ext)
 
-joblib.dump(con, 'constraints.dat')
 f = open('constraints.txt', 'w')
 f.write(str(con))
 f.close()

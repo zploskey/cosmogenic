@@ -15,3 +15,7 @@ class Sample:
         self.z = z # depth below surface (g/cm2)
         self.n = n # nuclide object
         self.f_sp_scaling = scaling.stone2000(lat, h)
+
+if __name__ == "__main__":
+    samp = Sample(2.64, 2300, 47, 0.98, 45)
+    print samp
