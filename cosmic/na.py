@@ -24,7 +24,7 @@ from joblib import Parallel, delayed
 
 import walk
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('neighborhood')
 
 class NASampler(object):
     """ Sample a parameter space using the Neighborhood Algorithm."""
@@ -501,7 +501,17 @@ def covariance(ms, mean):
     return C
 
 def _walk(n, m, start_idx, logP, lup, walk_num):
-    """ Calculates an average value along its walk. """
+    """ Produces models in a random walk over the initial ensemble.
+    
+    Models should have a sampling density that approximates the model space
+    posterior probability distribution (PPD). Random numbers generated in
+    the process of producing models are use an independently seeded
+    RandomState object making it safe to use in parallel computations, at
+    least for relatively few processes and short models runs.
+    """
+    # Each walk should have an independent random state so we do not overlap
+    # in the numbers generated in each walk.
+    random_state = np.random.RandomState()
     
     # Number of models in the ensemble
     Ne = m.shape[0]
@@ -521,7 +531,7 @@ def _walk(n, m, start_idx, logP, lup, walk_num):
     # for each sample we take along our walk
     for i in range(n):
         # first, randomly select order of the axes to walk
-        axes = np.random.permutation(d)
+        axes = random_state.permutation(d)
         for ax in axes:
             # keep track of squared perpendicular distances to axis
             m_thisax = m[:, ax]
@@ -535,7 +545,7 @@ def _walk(n, m, start_idx, logP, lup, walk_num):
             accepted = False
             while not accepted:
                 # generate proposed random deviate along this axis            
-                dev = np.random.uniform(low[ax], up[ax])
+                dev = random_state.uniform(low[ax], up[ax])
                 # determine voronoi cell index the deviate falls into
                 for ii, intersection in enumerate(ints):
                     if dev < intersection:
@@ -544,12 +554,13 @@ def _walk(n, m, start_idx, logP, lup, walk_num):
                 # get that cell's log relative probability and max along axis
                 logPxp = logP[cell_idx]
                 # generate another deviate between 0 and 1
-                r = np.random.uniform()
+                r = random_state.uniform()
                 accepted = np.log(r) <= (logPxp - logPmax)
             # we accepted a model, this is our new position in the walk
             xp[ax] = dev
             d2_prev_ax = d2_this_ax
         resampled_models[i, :] = xp.copy()
+    
     np.save('_walk_tmp%i' % walk_num, resampled_models)
     logger.info('Saved walk #%i' % walk_num)
     return True
@@ -602,12 +613,6 @@ def _calc_upper_intersect(xp, ax, m, cell_idx, d2, up_lim):
     x[cell_idx] = np.inf
     x[x <= xp[ax]] = np.inf
     
-    ## old way, probably shouldn't be hstacking this stuff (slow)
-    #tmp = np.hstack((up_lim, x))
-    #hi_idx = np.argmin(tmp) - 1
-    #xu = tmp[hi_idx + 1]
-    
-    # more efficient way way
     hi_idx = np.argmin(x)
     xu = x[hi_idx]
     if up_lim < xu:
