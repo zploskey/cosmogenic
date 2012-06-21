@@ -112,4 +112,3 @@ class Al26Qtz():
         """
         return concentration * self.relative_error(concentration)
 
-        
