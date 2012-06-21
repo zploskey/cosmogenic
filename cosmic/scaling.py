@@ -8,18 +8,20 @@ Scaling functions and associated helper functions
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 
-#from joblib import Memory
+ELEVATION_LIMIT = 44330.76923076923 
 
-#cachedir = tempfile.mkdtemp()
-
-#memory = Memory(cachedir=cachedir, verbose=0)
-
-#@memory.cache
 def alt_to_p(z):
     """
-    Convert elevation z to pressure in hPa.
+    Convert elevation z in meters to pressure in hPa.
+    Valid at midlatitudes and areas where pressure variation is not anomalous.
+
     Stone (2000) J. Geophys. Res., 105(B10), 23,753-23,759. Eq. 1
     """
+    z = np.atleast_1d(z)
+
+    if (z > ELEVATION_LIMIT).any():
+        raise ValueError('Elevation too high for this approximation') 
+
     Ps = 1013.25 # sea level pressure (hPa)
     Ts = 288.15 # sea level temperature (K)
     dTdz = 0.0065 # adiabatic lapse rate (K/m)
@@ -27,7 +29,6 @@ def alt_to_p(z):
     
     return Ps * np.exp((-gMR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
 
-# @memory.cache
 def stone2000_sp(lat, alt=None, P=None, interp='spline'):
     """
     Inputs:
@@ -101,5 +102,5 @@ def stone2000Rcsp(h, Rc):
     Rc = list of cutoff rigidities (GV)
     
     """
-    #rad_lats = deg_lats * np.pi / 180.0
-    return 42
+    
+    raise NotImplementedError
