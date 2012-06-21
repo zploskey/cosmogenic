@@ -319,7 +319,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     
     # pool = mp.Pool(n_jobs)
     # res = pool.map(walk.walk_wrapper, walk_params, chunksize=1)
-    res = Parallel(n_jobs=n_jobs, verbose=5)(delayed(walk.walk_wrapper)(par) 
+    res = Parallel(n_jobs=n_jobs, verbose=100)(delayed(walk.walk_wrapper)(par) 
                                                 for par in walk_params)
     
     assert sum(res) == Nw, 'One of the random walks failed!'
@@ -396,8 +396,8 @@ def plot_marginal(vals, edges, pos, fig, true_val=None):
         pylab.ylabel('Posterior Probability Density')
     
     # print x labels only on the bottom row
-    if pos[0] == 1 or pos[2] > pos[0] * (pos[1] - 1):
-        pylab.xlabel('Model value')
+    #if pos[2] > pos[0] * (pos[1] - 1):
+    #    pylab.xlabel('Model value')
     
     if true_val != None:
         # Construct a vertical line at the true value 
@@ -413,7 +413,8 @@ def run(func, conf):
     mp, misfit = search(func, conf)
     mr = resample(config=conf)
     logger.info("Run finished.")
-    stats = calc_stats(mr, mp, save=True)
+    stats = calc_stats(mr, mp, lo_lim=conf['lo_lim'], hi_lim=conf['hi_lim'], 
+                       save=True)
     shape = conf['shape'] if 'shape' in conf else None
     m_true = conf['m_true'] if 'm_true' in conf else None
     plot_stats(stats, conf['hi_lim'], conf['lo_lim'], shape=shape, m_true=m_true)
