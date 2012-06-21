@@ -38,11 +38,11 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
             dz = np.ones(ngl) * dz
     else:
         ngl = dz.size
-
+    
     # add the atoms created as we go back in time
     # recent interglacial first
     conc = simple_expose(z + postgl_shielding, t_postgl, n, p) 
-    z_cur = z.copy()    # start at current depths
+    z_cur = np.atleast_1d(z).copy()    # start at current depths
     t_begint = t_postgl # the time when the current interglacial began
     t_endint = 0.0      # time (now) when current interglacial ended
     for i in range(ngl):
@@ -256,34 +256,3 @@ def rand_erosion_hist(avg, sigma, n):
     standard deviation approximately equal to sigma.
     """
     return np.random.normal(avg, sigma, n)
-
-def steady_erosion(z, p_sp, p_fmu, p_negmu, eros_rate, nuc, t_exp, t):
-    """
-    General formula for accumulation of nuclides in an eroding surface
-    Dunai's book eq. 4.10 in 1st edition
-    """
-    p = production
-    z0 = eros_rate * t_exp + z # initial shielding depth, g/cm**2
-
-    # spallation
-    L_sp = p.LAMBDA_h
-    spal = (p_sp / (nuc.LAMBDA + eros_rate / L_sp))
-    spal *= np.exp((-z0 + eros_rate * t) / L_sp)
-    spal *= (1 - np.exp(-(nuc.LAMBDA + eros_rate / L_sp) * t))
-    # fast muons
-    L_fmu = p.LAMBDA_fast
-    fmu = (p_fmu / (nuc.LAMBDA + eros_rate / L_fmu))
-    fmu *= np.exp((-z0 + eros_rate * t) / L_fmu)
-    fmu *= (1 - np.exp(-(nuc.LAMBDA + eros_rate / L_fmu) * t))
-    # slow negative muons, using Fabel and Harbor 2004 constants
-    L_negmu = muon.LZ(z)
-    #A = np.array([0.096, 0.021])
-    #L_negmu = np.array([
-    #negmu = np.zeros(
-    #for j in range(2):
-    negmu = (p_negmu / (nuc.LAMBDA + eros_rate / L_negmu))
-    negmu *= np.exp((-z0 - eros_rate * t) / L_negmu)
-    negmu *= (1 - np.exp(-(nuc.LAMBDA + eros_rate / L_negmu) * t))
-    
-    conc = spal + fmu + negmu
-    return conc
