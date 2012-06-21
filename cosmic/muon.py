@@ -35,32 +35,43 @@ def p_fast_sl(z, n):
     """
     return (n.sigma0 * beta(z) * phi_sl(z) * ebar(z)**ALPHA * n.Natoms 
                      * SEC_PER_YEAR)
-
-def phi_vert_sl(h):
+                     
+def vert_flux_lt2k_hgcm2(z):
     """
-    Vertical muon flux (Heisinger et al. 2002a eq. 1) at depth z (g / cm2)
-    at sea level / high latitude in cm-2 sr-1 s-1
+    Heisinger 2002a equation 1
+    z: depth in hg / cm^2
     """
-    def flux_lt2k(h):
-        return 258.5 * np.exp(-5.5e-4 * h) / ((h + 210) * ((h + 10)**1.66 + 75))
+    return 258.5 * np.exp(-5.5e-4 * z) / ((z + 210) * ((z + 10)**1.66 + 75))
 
-    def flux_gt2k(h):
-        return 1.82e-6 * (1211.0 / h)**2 * np.exp(-h / 1211.0) + 2.84e-13        
-    h = np.atleast_1d(h) / 100.0 # depth in hg/cm2
+def vert_flux_gt2k_hgcm2(z):
+    """
+    Heisinger 2002a equation 2
+    z: depth in hg / cm^2
+    """
+    return 1.82e-6 * (1211.0 / z)**2 * np.exp(-z / 1211.0) + 2.84e-13 
+
+def phi_vert_sl(z):
+    """
+    Calculate the flux of vertically traveling muons as a function of depth
+    at sea level and high latitude.
+    
+    Vertical muon flux equation from Heisinger et al. 2002a eq. 1 and 2
+    
+    z: depth in  g / cm**2 for surface at sea level / high latitude
+    
+    Returns flux in muons cm-2 sr-1 s-1
+    """
+     
+    z = np.atleast_1d(z) / 100.0 # depth in hg/cm2
 
     # calculate the flux in units cm-2 sr-1 s-1
-    flux = np.zeros(h.size)
-    i_lt_2k = (h < 2000)
-    flux[i_lt_2k] = flux_lt2k(h[i_lt_2k])
+    flux = np.zeros(z.size)
+    i_lt_2k = (z < 2000)
+    flux[i_lt_2k] = vert_flux_lt2k_hgcm2(z[i_lt_2k])
     i_gt_2k = ~i_lt_2k
-    flux[i_gt_2k] = flux_gt2k(h[i_gt_2k])
+    flux[i_gt_2k] = vert_flux_gt2k_hgcm2(z[i_gt_2k])
 
     return flux
-
-    a = 258.5 * 100**2.66
-    b = 75 * 100**1.66
-    phi_200k = (a / ((2e5 + 21000) * (((2e5 + 1000)**1.66) + b))) * np.exp(
-                -5.5e-6 * 2e5)
 
 def n(z):
     """
@@ -120,7 +131,6 @@ def R_nmu(z):
     """
     return F_NEGMU * R(z)
 
-# @memory.cache
 def Rv0(z):
     """
     Analytical solution for the stopping rate of the muon flux at sea
@@ -130,21 +140,21 @@ def Rv0(z):
     z = np.atleast_1d(z)
     stop_rate = np.zeros(z.size)
 
-    lt = z < 200000    
+    lt = z < 200000.0
     zl = z[lt]
     a = np.exp(-5.5e-6 * zl)
-    b = zl + 21000
-    c = (zl + 1000)**1.66 + 1.567e5
+    b = zl + 21000.0
+    c = (zl + 1000.0)**1.66 + 1.567e5
     dadz = -5.5e-6 * np.exp(-5.5e-6 * zl)
-    dbdz = 1
-    dcdz = 1.66 *(zl + 1000)**0.66
+    dbdz = 1.0
+    dcdz = 1.66 * (zl + 1000.0)**0.66
     stop_rate[lt] = -5.401e7 * (b * c * dadz - a * (c * dbdz + b * dcdz)) / (b**2 * c**2)
     
-    gt = z >= 200000
+    gt = ~lt
     zg = z[gt]
     f = (121100.0 / zg)**2
     g = np.exp(-zg / 121100.0)
-    dfdz = -2 * (121100)**2 / zg**3
+    dfdz = -2.0 * (121100.0)**2 / zg**3
     dgdz = -np.exp(-zg / 121100.0) / 121100.0
     stop_rate[gt] = -1.82e-6 * (dfdz * g + dgdz * f)
     
@@ -154,6 +164,9 @@ def Rv0(z):
 
 
 # GENERAL MUONS
+# Groom, D.E., Mokhov, N.V., and Striganov, S.I., 2001. 
+# Muon stopping power and range tables 10 MeV - 100 TeV.
+# Atomic data and nuclear data tables 78, pp. 183-356.
 momentums = np.array([47.04, 56.16, 68.02, 85.1, 100, 152.7, 176.4, 221.8,
                       286.8, 391.7, 494.5, 899.5, 1101, 1502, 2103, 3104, 4104,
                       8105, 10110, 14110, 20110, 30110, 40110, 80110, 100100,
@@ -163,7 +176,7 @@ ranges = np.array([0.8516, 1.542, 2.866, 5.70, 9.15, 26.76, 36.96, 58.79, 93.32,
                    4920, 6724, 9360, 13620, 17760, 33430, 40840, 54950, 74590,
                    104000, 130200, 212900])
 max_range = ranges[-1]
-# interpolate the log range momentum date
+# interpolate the muon momentum and range relationship
 log_LZ_interp_base = sp.interpolate.interp1d(np.log(ranges), np.log(momentums))
 
 def log_LZ_interp(z):
@@ -181,7 +194,6 @@ def log_LZ_interp(z):
 
 def LZ(z):
     """
-    Converts muon range to momentum
     Effective atmospheric attentuaton length for muons of range z
     
     From Heisinger 2002
@@ -201,46 +213,71 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     Takes:
     z: a scalar or vector of sample depths in g/cm2
     h: altitude in meters or the atmospheric pressure in hPa at surface, scalar
-    n: a nuclide object containing nuclide specific information
+    nuc: a nuclide object containing nuclide specific information
     is_alt (optional): makes h be treated as an altitude in meters
     
-    Returns the total production rate from muons in atoms
+    Returns the total production rate from muons in atoms / g / yr
     """
     z = np.atleast_1d(z)
-
     # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
         h = scaling.alt_to_p(h)
     
-    # calculate the atmospheric depth of each sample in g/cm2
-    deltaH = 10 * (SEA_LEVEL_PRESSURE - h) / A_GRAVITY
+    # Calculate the flux of vertically traveling muons as a function of depth
+    # at sea level and high latitude
+    phi_v0 = phi_vert_sl(z)
     
-    # find the stopping rate of vertical muons at SLHL
+    # Calculate the stopping rate of vertically traveling muons as a function
+    # of depth at sea level and high latitude, which is equivalent to the
+    # range spectrum of vertically traveling muons at the surface.
     R_v0 = Rv0(z)
     
-    # calculate vertical muon stopping rate at the site
-    L = LZ(z) # save this for later calculations
-    R_v = R_v0 * np.exp(deltaH / L) # vertical muons stopping rate at site
-
-    phi_v0 = phi_vert_sl(z)
-
-    # Our (site-specific) vertical muon stopping rate
-    def Rv(depth):
-        return Rv0(depth) * np.exp(deltaH / LZ(depth))
+    # 3. Adjust range spectrum of vertically traveling muons for elevation
     
-    # integrate the stopping rate to get the vertical muon flux at depth z
+    # Calculate the atmospheric depth of each sample in g/cm2 between 
+    # the site and sea level
+    deltaH = 10.0 * (SEA_LEVEL_PRESSURE - h) / A_GRAVITY
+    
+    # calculate vertical muon stopping rate at the site
+    L = LZ(z) # saved for full data report
+    R_v = R_v0 * np.exp(deltaH / L) # vertical muons stopping rate at site
+    
+    def Rv(z):
+        return Rv0(z) * np.exp(deltaH / LZ(z))
+    
+    # Integrate the stopping rate to get the vertical muon flux at depth z
     # at the sample site
-    phi_v = np.zeros(z.size)
-    int_err = np.zeros(z.size)
+    phi_v = np.zeros_like(z)
     tol = phi_v0 * 1e-4 # absolute error tolerance
     lim = 2e5 # limit of our integration
-    for i, zi in enumerate(z):
-        phi_v[i], int_err[i] = scipy.integrate.quad(Rv, zi, lim, epsabs=tol[i])
+
+    # we want to do the integrals in the order of decreasing depth
+    # so we can accumulate the flux as we go up
     
+    # indexes of the sorted, then reversed array
+    rev_sort_idxs = np.argsort(z)[::-1] 
+    # reordering of z to be in increasing order
+    zsorted = z[rev_sort_idxs]
+    # keep track of the vertical flux at the previous depth
+    prev_phi_v = 0.0
+    for i, zi in enumerate(zsorted):
+        idx = rev_sort_idxs[i]
+        
+        if i == 0:
+            prev_z = lim
+            real_tol = tol[idx]
+        else:
+            real_tol = tol[idx] / (prev_z - zi)
+        
+        phi_v[idx], _ = scipy.integrate.quad(Rv, zi, prev_z, epsabs=real_tol)
+        phi_v[idx] += prev_phi_v
+        prev_phi_v = phi_v[idx]
+        prev_z = zi
+        
     # add in the flux below 2e5 g / cm2, assumed to be constant
     a = 258.5 * 100**2.66
     b = 75 * 100**1.66
-    phi_200k = (a / ((2e5 + 21000) * (((2e5 + 1000)**1.66) + b))) * np.exp(
+    phi_200k = (a / ((2e5 + 21000.0) * (((2e5 + 1000.0)**1.66) + b))) * np.exp(
                 -5.5e-6 * 2e5)
     phi_v += phi_200k
     
