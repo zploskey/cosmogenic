@@ -9,7 +9,6 @@ import numexpr as ne
 import joblib
 
 from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.optimize import curve_fit
 from scipy.interpolate import dfitpack
 
 import muon

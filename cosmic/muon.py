@@ -219,6 +219,7 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     Returns the total production rate from muons in atoms / g / yr
     """
     z = np.atleast_1d(z)
+    z = z.astype(np.float64)
     # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
         h = scaling.alt_to_p(h)
@@ -248,7 +249,7 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     # Integrate the stopping rate to get the vertical muon flux at depth z
     # at the sample site
     phi_v = np.zeros_like(z)
-    tol = phi_v0 * 1e-4 # absolute error tolerance
+    tol = 1e-4 # relative error tolerance
     lim = 2e5 # limit of our integration
 
     # we want to do the integrals in the order of decreasing depth
@@ -260,16 +261,10 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     zsorted = z[rev_sort_idxs]
     # keep track of the vertical flux at the previous depth
     prev_phi_v = 0.0
+    prev_z = lim
     for i, zi in enumerate(zsorted):
         idx = rev_sort_idxs[i]
-        
-        if i == 0:
-            prev_z = lim
-            real_tol = tol[idx]
-        else:
-            real_tol = tol[idx] / (prev_z - zi)
-        
-        phi_v[idx], _ = scipy.integrate.quad(Rv, zi, prev_z, epsabs=real_tol)
+        phi_v[idx], _ = scipy.integrate.quad(Rv, zi, prev_z, epsrel=tol, epsabs=0)
         phi_v[idx] += prev_phi_v
         prev_phi_v = phi_v[idx]
         prev_z = zi
