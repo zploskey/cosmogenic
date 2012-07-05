@@ -28,7 +28,7 @@ def main():
     con = eval(f.open(os.path.join(data_dir, 'constraints_fixed.txt')).read())
     dof = con['dof']
     d = m.shape[1]
-    limits = (np.ones(d) * con['min_dz'], np.ones(d) * con['max_dz']))
+    limits = (np.ones(d) * con['min_dz'], np.ones(d) * con['max_dz'])
     Nw = 100 # number of walks
     n = 1000 # number of samples to take along each walk
 
@@ -37,8 +37,8 @@ def main():
     stats = na.stats(mr, m)
     fig = plot_stats(stats)
 
-def plot_stats(stats, true_vals=None)
-       # stats = {
+def plot_stats(stats, true_vals=None):
+            # stats = {
              # 'marginals': marginals,
              # 'bin_edges': bin_edges,
              # 'C': C,
@@ -57,10 +57,10 @@ def plot_stats(stats, true_vals=None)
     ax = None
     for i in range(d):
         if true_vals != None:
-            ax = plot_marginal(margs[:, i], edges[:, i], pos=(1, i), fig, ax,
+            ax = plot_marginal(margs[:, i], edges[:, i], (1, i), fig, ax,
                                true_vals[i])
         else:
-            ax = plot_marginal(margs[:, i], edges[:, i], pos=(1, i), fig, ax)
+            ax = plot_marginal(margs[:, i], edges[:, i], (1, i), fig, ax)
     
     pylab.xlabel('Parameter value')
     pylab.ylabel('Probability density')
@@ -81,7 +81,7 @@ def plot_marginal(vals, edges, pos, fig, prev_ax, true_val=None):
         x = [true_val, true_val]
         pylab.plot(x, y, 'k-')
     
-    pylab.title(r'$m_' + str(pos[0] * pos[1] )) + '$')
+    pylab.title(r'$m_' + str(pos[0] * pos[1]) + '$')
     
     
 if __name__ == "__main__":

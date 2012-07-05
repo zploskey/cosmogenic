@@ -21,7 +21,7 @@ shielding = 1.0
 be10 = nuclide.Be10Qtz()
 
 # get production curves first
-#Psp = production.P_sp(z0, h, lat, be10)
+#Psp = production.P_sp(z0, be10, 'stone', h, lat)
 #muondata = muon.P_mu_total(z0, h, be10, full_data=True)
 #Pfmu = muondata['P_fast']
 #Pnmu = muondata['P_neg']

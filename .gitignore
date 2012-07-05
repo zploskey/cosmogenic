@@ -17,6 +17,13 @@ dist
 .bzr
 .svn
 *.pyc
+*.pyd
+cythonize.dat
+*.swp
 *.pyo
 *.tmp*
 *~
+*.o
+*.lo
+*.so
+*.la

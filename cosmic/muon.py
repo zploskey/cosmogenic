@@ -283,7 +283,7 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     phi = 2 * np.pi * phi_v / (nofz + 1) # muons/cm2/s
     phi *= SEC_PER_YEAR # convert to muons/cm2/yr
     
-    # find total muon stopping rate of negative muons/g/s
+    # find stopping rate of negative muons/g/s
     # R = fraction_of_negative_muons * derivative(tot_muon_flux(z+deltaH))
     R = F_NEGMU * 2 * np.pi * ((R_v / (nofz + 1)) + (phi_v * dndz 
                                 / (nofz + 1)**2))

@@ -25,9 +25,9 @@ def alt_to_p(z):
     Ps = 1013.25 # sea level pressure (hPa)
     Ts = 288.15 # sea level temperature (K)
     dTdz = 0.0065 # adiabatic lapse rate (K/m)
-    gMR = 0.03417 # combined constant gM/R (K/m)
+    gMoverR = 0.03417 # combined constant gM/R (K/m)
     
-    return Ps * np.exp((-gMR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
+    return Ps * np.exp((-gMoverR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
 
 def stone2000_sp(lat, alt=None, P=None, interp='spline'):
     """

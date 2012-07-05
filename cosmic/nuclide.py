@@ -15,7 +15,7 @@ class Be10Qtz():
     """
 
     def __init__(self, constants='stone'):
-        self.Natoms = 2.005e22 # atoms of O / g quartz, from John's program
+        self.Natoms = 2.0046e22 # atoms of O / g quartz, from John's program
         self.LAMBDA = 4.998e-7
         
         # probability factors from Heisinger et al. 2002b
@@ -33,7 +33,7 @@ class Be10Qtz():
         elif constants == 'stone':
             # John Stone, pers. communication
             self.fstar = 0.0011 # already adjusted for 07KNSTD
-            self.sigma0 = 8.0707e-31
+            self.sigma0 = 8.0707e-31 
             # for consistency calculate what sigma190 should be
             self.sigma190 = self.sigma0 * 190 ** ALPHA
         else:

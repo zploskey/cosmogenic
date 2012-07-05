@@ -154,72 +154,72 @@ def fwd_profile_slow(z0, z_removed, t, n, h, lat):
         
     return N
 
-def fwd_profile_steps(z0, z_removed, t, n, h, lat):
-    """
-    The profile at end of each interglacial period.
-    """
-    L = n.LAMBDA
-    N = np.zeros(len(z0))
-    t_beg = t[2::2]
-    t_end = t[1::2]
-    Ns = np.zeros( (len(t_end) + 1, len(z0)) )
-    z_cur = z0.copy() + z_removed.sum()
-    idepth = np.add.accumulate(z_removed)
-    npts = 200
-    
-    for i in range(1, z_removed.size):
-        # begin interglacial period
-        depths = np.linspace(0, z0[-1] + idepth[-i], npts)
-        N *= np.exp(-L * tg) # radioactive decay
-        Nexp = sim.simple_expose(depths, ti, be10, p)
-        N += Nexp
-        # fnc = sp.interpolate.interp1d(depths, N)
-        
-        depthsm = depths / rho / 100.0
-        ln = plt.semilogx(N, depthsm, lw=2, color='lightslategray')
-    #    leg.append('Ig ' + str(i))
-        lines = np.append(lines, ln)
+#def fwd_profile_steps(z0, z_removed, t, n, h, lat):
+#    """
+#    The profile at end of each interglacial period.
+#    """
+#    L = n.LAMBDA
+#    N = np.zeros(len(z0))
+#    t_beg = t[2::2]
+#    t_end = t[1::2]
+#    Ns = np.zeros( (len(t_end) + 1, len(z0)) )
+#    z_cur = z0.copy() + z_removed.sum()
+#    idepth = np.add.accumulate(z_removed)
+#    npts = 200
+#    
+#    for i in range(1, z_removed.size):
+#        # begin interglacial period
+#        depths = np.linspace(0, z0[-1] + idepth[-i], npts)
+#        N *= np.exp(-L * tg) # radioactive decay
+#        Nexp = sim.simple_expose(depths, ti, be10, p)
+#        N += Nexp
+#        # fnc = sp.interpolate.interp1d(depths, N)
+#        
+#        depthsm = depths / rho / 100.0
+#        ln = plt.semilogx(N, depthsm, lw=2, color='lightslategray')
+#    #    leg.append('Ig ' + str(i))
+#        lines = np.append(lines, ln)
+#
+#        # begin glaciation
+#        N *= np.exp(-be10.LAMBDA * tg) # isotopic decay
+#        # erode the top of the profile away
+#        depths -= z_removed[-i]
+#        nofz = interpolate.interp1d(depths, N) # interpolate conc. curve
+#        depths = np.linspace(0, depths[-1], 500)
+#        N = nofz(depths)
+#
+#        depthsm = depths / rho / 100.0
+#        ln = plt.semilogx(N, depthsm, color='lightslategray', lw=2)
+#        lines = np.append(lines, ln)
+#    #    leg.append('Gl ' + str(i))
+#
+#        # account for recent cosmic ray exposure
+#        Nhol = sim.simple_expose(depths, tH, be10, h, lat) 
+#        N *= np.exp(-be10.LAMBDA * tH)
+#        N += Nhol
+#        ln = plt.semilogx(N, depthsm, color='r', lw=2)
+#        lines = np.append(lines, ln)
+#    
+#    # Add nuclides formed postglacially
+#    for i, dz in enumerate(z_removed):
+#        ind = -(i + 1)
+#        dt = t_beg[ind] - t_end[ind]
+#        # dt += t_beg[ind - 1]
+#        buildup = simple_expose_slow(z0, dt, n, h, lat)
+#        Ndec = N * np.exp(-L * dt)
+#        Ns[i] = N
+#        z_cur -= dz
+#        p = production.P_tot(z_cur, h, lat, n)
+#        buildup =  (p / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
+#        N += buildup
+#        Ns[-i + 1, :] = N.copy().T
+#    Nhol = simple_expose_slow(z0, t[0], n, h, lat)
+#    N += Nhol
+#
+#    Ns[0, :] = N + Nhol
+#    return Ns
 
-        # begin glaciation
-        N *= np.exp(-be10.LAMBDA * tg) # isotopic decay
-        # erode the top of the profile away
-        depths -= z_removed[-i]
-        nofz = interpolate.interp1d(depths, N) # interpolate conc. curve
-        depths = np.linspace(0, depths[-1], 500)
-        N = nofz(depths)
-
-        depthsm = depths / rho / 100.0
-        ln = plt.semilogx(N, depthsm, color='lightslategray', lw=2)
-        lines = np.append(lines, ln)
-    #    leg.append('Gl ' + str(i))
-
-        # account for recent cosmic ray exposure
-        Nhol = sim.simple_expose(depths, tH, be10, alt, lat) 
-        N *= np.exp(-be10.LAMBDA * tH)
-        N += Nhol
-        ln = plt.semilogx(N, depthsm, color='r', lw=2)
-        lines = np.append(lines, ln)
-    
-    # Add nuclides formed postglacially
-    for i, dz in enumerate(z_removed):
-        ind = -(i + 1)
-        dt = t_beg[ind] - t_end[ind]
-        # dt += t_beg[ind - 1]
-        buildup = simple_expose_slow(z0, dt, n, h, lat)
-        Ndec = N * np.exp(-L * dt)
-        Ns[i] = N
-        z_cur -= dz
-        p = production.P_tot(z_cur, h, lat, n)
-        buildup =  (p / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
-        N += buildup
-        Ns[-i + 1, :] = N.copy().T
-    Nhol = simple_expose_slow(z0, t[0], n, h, lat)
-    N += Nhol
-
-    Ns[0, :] = N + Nhol
-    return Ns
-
-def steady_multiglaciate(model, constraints, zvst=False):
+def steady_multiglaciate(model, constraints, bottom_depth_error, z_vs_t=False):
     """
     Model should have: [erosion_rate, t_gl, t_int]
     in units g / cm^2 / yr, yr and yr respectively
@@ -229,26 +229,30 @@ def steady_multiglaciate(model, constraints, zvst=False):
     con = constraints
     eros, t_gl, t_int = tuple(model.tolist())
     t_cycle = t_gl + t_int
-    eros_depth = eros_rate * t_cycle
-    
+    eros_depth = con['eros_rate'] * t_cycle
     z_cur = con['sample_depths'].copy()
+    bottom_idx = np.argmin(z_cur)
     t_beg = con['t_postgl']
     t_end = 0
+    
+    conc = np.zeros(z_cur.size)
     while True:
         p = production.P_tot(z_cur, con['sample_h'], con['lat'],
                              con['nuclide'])
         added_conc = expose(z_cur, t_beg, t_end, con['nuclide'], 
                             con['sample_h'], con['lat'])
+        conc += added_conc
 
-        if added_conc < bottom_depth_error:
+        if added_conc[bottom_idx] < bottom_depth_error:
             break
         t_beg += t_cycle
         t_end += t_cycle
         dz += eros_depth
-    if zvst:
-        return (conc_true, t_true, z_true)
-    else:
-        return conc_true
+    
+#    if z_vs_t:
+#        return (conc_true, t_true, z_true)
+#    else:
+    return conc
 
 def rand_erosion_hist(avg, sigma, n):
     """
@@ -256,3 +260,7 @@ def rand_erosion_hist(avg, sigma, n):
     standard deviation approximately equal to sigma.
     """
     return np.random.normal(avg, sigma, n)
+
+def steady_erosion(z, eros_rate, t, alt, lat):
+    raise NotImplementedError()
+    

@@ -11,14 +11,13 @@ import muon
 # s = sample.Sample(rho=2.67, h=1000, lat=65, shielding=1.0, z=1)
 # print "Total muon flux: %f " % muon.tot_mu_flux(s)
 rho = 2.67
-h = 1 # elevation in meters
-lat = 65 # sample latitude in degrees
+h = 0.0 # elevation in meters
 z0 = np.linspace(0, 800 * rho)
 shielding = 1.0
 be10 = nuclide.Be10Qtz()
 
 # get production curves first
-Psp = production.P_sp(z0, h, lat, be10)
+Psp = production.P_sp(z0, be10)
 muondata = muon.P_mu_total(z0, h, be10, full_data=True)
 Pfmu = muondata['P_fast']
 Pnmu = muondata['P_neg']

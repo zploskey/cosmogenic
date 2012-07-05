@@ -11,7 +11,6 @@ from __future__ import division
 import cPickle
 import datetime
 import logging
-#import multiprocessing as mp
 import os
 import time
 
@@ -316,9 +315,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         logger.info('Importance resampling with %i simultaneous walks...' % n_jobs)
         # we're already parallel, so run numexpr in single-threaded mode
         numexpr.set_num_threads(1)
-    
-    # pool = mp.Pool(n_jobs)
-    # res = pool.map(walk.walk_wrapper, walk_params, chunksize=1)
+
     res = Parallel(n_jobs=n_jobs, verbose=100)(delayed(walk.walk_wrapper)(par) 
                                                 for par in walk_params)
     

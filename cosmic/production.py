@@ -12,12 +12,12 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import dfitpack
 
 import muon
-import scaling
+import scaling as scal
 
 LAMBDA_h = 155.0 # attenuation length of hadronic component in atm, g / cm2
 LAMBDA_fast = 4320.0 # after Heisinger 2002
 
-def P_sp(z, alt, lat, n):
+def P_sp(z, n, scaling=None, alt=0, lat=75):
     """
     Returns production rate due to spallation reactions (atoms/g/yr)
 
@@ -31,10 +31,14 @@ def P_sp(z, alt, lat, n):
     lat: site latitude (degrees)
     n: nuclide object
     """
-    f_scaling = scaling.stone2000_sp(lat, alt)
+    if scaling == 'stone':
+        f_scaling = scal.stone2000_sp(lat, alt)
+    else:
+        f_scaling = 1.0
+    
     return f_scaling * n.P0 * np.exp(-z / LAMBDA_h)
 
-def P_tot(z, alt, lat, n):
+def P_tot(z, alt, lat, n, scaling=None):
     """
     Total production rate of nuclide n in atoms / g of material / year
     
@@ -43,9 +47,9 @@ def P_tot(z, alt, lat, n):
     lat: site latitude (degrees)
     n: nuclide object
     """
-    return P_sp(z, alt, lat, n) + muon.P_mu_total(z, alt, n)
+    return P_sp(z, n, scaling, alt, lat) + muon.P_mu_total(z, alt, n)
 
-def interpolate_P_tot(max_depth, npts, alt, lat, n):
+def interpolate_P_tot(max_depth, npts, alt, lat, n, scaling='stone'):
     """
     Interpolates the production rate function using a spline interpolation.
 
@@ -55,7 +59,7 @@ def interpolate_P_tot(max_depth, npts, alt, lat, n):
     n: nuclide object
     """
     zs = np.unique(np.logspace(0, np.log2(max_depth + 1), npts, base=2)) - 1
-    prod_rates = P_tot(zs, alt, lat, n)
+    prod_rates = P_tot(zs, alt, lat, n, scaling)
     p = ProductionSpline(zs, prod_rates)
     return p, zs, prod_rates
 
@@ -81,6 +85,9 @@ class ProductionSpline(InterpolatedUnivariateSpline):
                        if 1/w[i] is an estimate of the standard
                        deviation of y[i].
           filename   - file to load a saved spline from
+          
+          
+
         """
         
         if (x == None) or (y == None) and (filename != None):
@@ -98,6 +105,15 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         return res_arr[0] if res_arr.size == 1 else res_arr
         
     def save(self, filename):
+        """
+        What gets saved is pretty specific to the version of scipy that we are use
+        so is important to test that this works with new versions of scipy. For
+        now, the only important values for the spline interpolation are stored in
+        the spline's _data member, but could change, as could the structure of
+        _eval_args. To be safe, do not depend on this to load old interpolations.
+        It is probably safest to create a new interpolation for a new scipy
+        version.
+        """
         joblib.dump(self._data, filename)
     
 def load_interpolation(name):
@@ -106,18 +122,10 @@ def load_interpolation(name):
 
     name: (string) name of file to load from
     """
-    return ProductionSpline.fromfile(name)
+    return ProductionSpline(filename=name)
     
 def save_interpolation(name, spline):
     """
     Save a spline interpolation to disk.
-
-    What gets saved is pretty specific to the version of scipy that we are use
-    so is important to test that this works with new versions of scipy. For
-    now, the only important values for the spline interpolation are stored in
-    the spline's _eval_args member, but could change, as could the structure of
-    _eval_args. To be safe, do not depend on this to load old interpolations.
-    It is probably safest to create a new interpolation for a new scipy
-    version.
     """
     return spline.save(name)

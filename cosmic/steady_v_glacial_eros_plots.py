@@ -29,7 +29,7 @@ t = t_exp # show us the end product
 eros_rate_mMyr = 20 # m / Myr
 eros_rate = eros_rate_mMyr * 1e-4 * rho # gcm2/yr
 
-p_sp = production.P_sp(z, alt, lat, nuc)
+p_sp = production.P_sp(z, nuc)
 mu = muon.P_mu_total(z, alt, nuc, full_data=True)
 C_steady = sim.steady_erosion(z, p_sp, mu['P_fast'], mu['P_neg'], eros_rate,
                               nuc, t, t_exp)
