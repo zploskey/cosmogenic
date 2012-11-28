@@ -50,7 +50,6 @@ C_gl = sim.multiglaciate(dz, t_gl, t_int, 0, z, nuc, p, n_gl=n_gl)
 t_mid_postgl = 15000 # yr
 C_post15k = sim.simple_expose(z, t_mid_postgl, nuc, p)
 
-# make some figures!!
 fig_height = 6 # in.
 fig_width = 5 # in.
 fig = Figure(figsize=(fig_width, fig_height))

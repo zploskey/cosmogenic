@@ -15,21 +15,23 @@ import os
 import time
 
 import numpy as np
-import scipy as sp
-import pylab
+import math
 import numexpr
+import pylab
+import scipy as sp
 
 from joblib import Parallel, delayed
 
 import walk
 
-logger = logging.getLogger('neighborhood')
+logger = logging.getLogger(__name__)
+SINGLE_PROCESS_DEBUG = False
 
 class NASampler(object):
     """ Sample a parameter space using the Neighborhood Algorithm."""
     
     def __init__(self, fn, ns=10, nr=2, lo_lim=0, hi_lim=1, d=1, ne=10000,
-                 config=None, description=''):       
+                 config=None, description='', n_initial=None):       
         """Create an NASampler to sample a parameter space using the
         Neighborhood algorithm.
         
@@ -57,6 +59,10 @@ class NASampler(object):
             self.ne = config['ne']
             self.nr = config['nr']
             self.ns = config['ns']
+            if 'n_initial' in config:
+                self.n_initial = config['n_initial']
+            else:
+                self.n_initial = self.ns
         else:
             self.d = d # model length
             self.description = description
@@ -65,6 +71,10 @@ class NASampler(object):
             self.ne = ne
             self.nr = nr # number of Voronoi cells to explore in each step
             self.ns = ns # number of models for each step
+            if n_initial == None:
+                self.n_initial = self.ns
+            else:
+                self.n_initial = n_initial
         
         assert self.hi_lim.shape == self.lo_lim.shape, 'Limits must have the same shape.'
         n_models = self.ne + (self.ne % self.ns)
@@ -78,7 +88,7 @@ class NASampler(object):
         self.np = 0 # number of previous models
         self.lo_lim_nondim = 0.0
         self.hi_lim_nondim = 1.0
-    
+
     def dimensionalize(self, x):
         return self.lo_lim + (self.hi_lim - self.lo_lim) * x
         
@@ -140,19 +150,21 @@ class NASampler(object):
         assert n > 0, 'There must be at least 1 model in the ensemble.'        
         
         start_time = time.time()
-        logger.info('Generating ensemble')
-        logger.info('Start time: %s' % time.asctime(time.localtime(start_time)))
+        logger.info('Generating ensemble...')
+        logger.info('Start time: %s' 
+                    % time.asctime(time.localtime(start_time)))
 
         max_chosen = max(self.chosen_misfits)
         it = 1 # iteration number
         idx = 0
-        self.m[0:self.ns, :] = self.generate_random_models()
-        # self.mdim[0:self.ns, :] = self.dimensionalize(self.m[0:self.ns, :])
-        while (self.np < n): # and self.n_fitting < n:
-            ns = self.ns
+        self.m[0:self.n_initial, :] = self.generate_random_models(
+            self.n_initial)
+        ns = self.n_initial
+        while (self.np < n):
+            
             if it != 1 and self.np != 0:
                 new_models = self.select_new_models()
-                end_idx = self.np + self.ns
+                end_idx = self.np + ns
                 if end_idx > n:
                     ns = n - self.np
                     new_models = new_models[0:ns]
@@ -161,7 +173,6 @@ class NASampler(object):
             # calculate the misfit function for our ns models
             # record the best (lowest) ones so far
             for j in range(ns):
-                print "Iteration = %i, model index = %i. " % (it, idx),
                 
                 # store a dimensional version of each model model
                 mdim = self.dimensionalize(self.m[idx])
@@ -174,20 +185,26 @@ class NASampler(object):
                     self.chosen_misfits[old_hi_idx] = self.misfit[idx]
                     self.lowest_idxs[old_hi_idx] = idx
                     max_chosen = np.max(self.chosen_misfits)
-                print ""
                 idx += 1
-            self.np += self.ns
+            self.np += ns
+            minimum = self.chosen_misfits[0]
+            print "Min: %0.4g, iteration %i, %i models" % (minimum, it, idx+1)
             it += 1
+            ns = self.ns
+        
         end_time = time.time()
         print 'End time:', time.asctime(time.localtime(end_time))
         runtime = end_time - start_time
-        print 'Inversion took %i minutes and %0.2f seconds.' % (round(runtime / 60),
-              runtime % 60)
+        print 'Inversion took %i minutes and %0.2f seconds.' % (
+                round(runtime / 60), runtime % 60)
         return True
 
-    def generate_random_models(self):
+    def generate_random_models(self, n=None):
         """Generates a row matrix of random models in the parameter space."""
-        return np.random.random_sample((self.ns, self.d))
+        if n == None:
+            n = self.ns
+
+        return np.random.random_sample((n, self.d))
 
     def select_new_models(self):
         """ Returns a 2D ndarray where each row is newly selected model.
@@ -240,11 +257,7 @@ def search(fn, config):
     objective function fn, then save the results to disk."""
     sampler = NASampler(fn, config=config)
     sampler.generate_ensemble()
-    
-    if "datadir" in config:
-        sampler.save(config['datadir'])
-    else:
-        sampler.save()
+    sampler.save()
     return (sampler.mdim, sampler.misfit)
 
 def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
@@ -297,16 +310,19 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         lup = (lo_lim, hi_lim)
     
     walkstart_idxs = np.argsort(x2v)[0:Nw]
+    
+    # Log model probabilities, ignoring k constant (Sambridge 1999b eq. 29)
     logP = -(0.5 * dof) * x2v
+    
     start_time = time.time()
     logger.info('Start time: %s' % time.asctime(time.localtime(start_time)))
     logger.info('Generating list of random walks to perform...')
     walk_params = ((pts_per_walk, m, wi, logP, lup, i) 
                  for i, wi in enumerate(walkstart_idxs))
                  
-    if logger.isEnabledFor(logging.DEBUG):
+    if SINGLE_PROCESS_DEBUG:
         # in debug mode we resample in a single process
-        logger.debug('Importance resampling with sequential random walks.')
+        logger.info('Importance resampling with sequential random walks.')
         # res = map(walk.walk_wrapper, walk_params)
         n_jobs = 1
         numexpr.set_num_threads(numexpr.ncores)
@@ -323,17 +339,19 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     logger.info('Finished importance sampling at %s' % time.asctime())
     logger.info('Recombining samples from each walk...')
     mr = np.zeros((Nw * pts_per_walk, d), dtype=np.float64)
+    
     for i in range(Nw):
         cur_file = '_walk_tmp' + str(i) + '.npy'
         n = pts_per_walk
         mr[i*n:(i+1)*n, :] = np.load(cur_file)
         os.remove(cur_file)
+    
     logger.info("Storing resampling data...")
     
     if path != None:
         np.savetxt(os.path.join(path, "mr.dat"), mr)
     
-    logger.info('FINISHED IMPORTANCE SAMPLING')
+    logging.info('FINISHED IMPORTANCE SAMPLING')
     end_time = time.time()
     runtime = end_time - start_time
     logger.info('End time: %s' % time.asctime(time.localtime(end_time)))
@@ -348,7 +366,8 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     
     return mr
 
-def plot_stats(stats, lo_lim, hi_lim, shape=None, labels=None, m_true=None):
+def plot_stats(stats, lo_lim, hi_lim, shape=None, m_true=None,
+               labels=None):
        # stats = {
              # 'marginals': marginals,
              # 'bin_edges': bin_edges,
@@ -356,13 +375,18 @@ def plot_stats(stats, lo_lim, hi_lim, shape=None, labels=None, m_true=None):
              # 'R': R,
              # 'C_prior': C_prior,
             # }
-
+    if m_true != None:
+        print m_true
+        
     margs = stats['marginals']
     edges = stats['bin_edges']
     d = margs.shape[1] # number of model dimensions
     
     if shape == None:
         shape = (1, d)
+    
+    if labels == None:
+        labels = [None] * d
     
     # monkey with the figure to make room for a shared label
     #figprops = dict(figsize=(8., 8. / 1.618), dpi=128)
@@ -376,48 +400,79 @@ def plot_stats(stats, lo_lim, hi_lim, shape=None, labels=None, m_true=None):
     for i in range(d):
         pos = shape + (i + 1,)
         if m_true != None:
-            ax = plot_marginal(margs[:, i], edges[:, i], pos, m_true[i])
+            ax = plot_marginal(margs[:, i], edges[:, i], pos, m_true[i], label=labels[i])
         else:
-            ax = plot_marginal(margs[:, i], edges[:, i], pos)
+            ax = plot_marginal(margs[:, i], edges[:, i], pos, label=labels[i])
     
     pylab.suptitle('1-D Marginals', fontsize=14)
     pylab.show()
 
-def plot_marginal(vals, edges, pos, fig, true_val=None):
+def plot_marginal(vals, edges, pos, true_val=None, label=None):
     # add the subplot, sharing x and y axes labels
     ax = pylab.subplot(pos[0], pos[1], pos[2])
-    pylab.plot(edges[:-1], vals, 'k')
-    
-    # print y labels only on the left side axes
-    if pos[1] == 1 or ((pos[2] - 1) % pos[1]) == 0:
-        pylab.ylabel('Posterior Probability Density')
-    
-    # print x labels only on the bottom row
-    #if pos[2] > pos[0] * (pos[1] - 1):
-    #    pylab.xlabel('Model value')
     
     if true_val != None:
         # Construct a vertical line at the true value 
-        y = [0, np.max(vals)]
+        y = [0, np.max(vals) * (1.2)]
         x = [true_val, true_val]
-        pylab.plot(x, y, 'b-')
+        pylab.plot(x, y, 'r-')
+    
+    # find the center of each bin for plotting
+    bin_centers = edges[:-1] + 0.5 * np.diff(edges)
+    pylab.plot(bin_centers, vals, 'k')
+    
+    # print y labels only on the left side axes
+    if pos[1] == 1 or ((pos[2] - 1) % pos[1]) == 0:
+        pylab.ylabel('PPD')
     
     pylab.xlim((edges[0], edges[-1]))
-    pylab.ylim((0, np.max(vals)))
+    max_val = np.max(vals)
+    pylab.ylim((0, max_val * (1.1)))
+    if label != None:
+        pylab.xlabel(label)
+        
     pylab.title(r'$m_' + str(pos[2]) + '$')
 
 def run(func, conf):
-    mp, misfit = search(func, conf)
-    mr = resample(config=conf)
+    mp, _ = search(func, conf)
     logger.info("Run finished.")
+    stats = resample_and_plot(conf, mp)
+    return stats
+    
+def resample_and_plot(conf, mp):
+    """
+    conf:   configuration dictionary
+    mp:     prior models
+    misfit: misfits of the prior model
+    """
+    mr = resample(config=conf)
     stats = calc_stats(mr, mp, lo_lim=conf['lo_lim'], hi_lim=conf['hi_lim'], 
                        save=True)
     shape = conf['shape'] if 'shape' in conf else None
     m_true = conf['m_true'] if 'm_true' in conf else None
-    plot_stats(stats, conf['hi_lim'], conf['lo_lim'], shape=shape, m_true=m_true)
+    plot_stats(stats, conf['hi_lim'], conf['lo_lim'], shape=shape, 
+               m_true=m_true)
+    return stats
+
+def plot_results(conf, stats=None, m_true=None, labels=None):
+    if stats == None:
+        stats = _load_pickled('stats.pkl')
+    shape = conf['shape'] if 'shape' in conf else None
+    if m_true == None:
+        m_true = conf['m_true'] if 'm_true' in conf else None
+        
+    plot_stats(stats, conf['hi_lim'], conf['lo_lim'], shape=shape, 
+               m_true=m_true, labels=labels)
+    return stats
     
+def _load_pickled(filename):
+    path = os.path.abspath(filename)
+    with open(path, 'r') as fd:
+        payload = cPickle.load(fd)
+    return payload
+
 def calc_stats(mr, mprior, nbins=100, lo_lim=0.0, hi_lim=1.0, save=False, 
-          datadir=None):
+               datadir=None):
     """ Calculates some statistics on resampled ensemble of models.
 
     Takes:
@@ -452,23 +507,31 @@ def calc_stats(mr, mprior, nbins=100, lo_lim=0.0, hi_lim=1.0, save=False,
     # each column is a histogram along that dimension (column) of the data
     marginals = np.zeros((nbins, d))
     bin_edges = np.zeros((nbins + 1, d))
+    mode = np.zeros(d)
+    std = np.zeros(d)
+    ci95 = []
+    ci68 = []
     for i in range(d):
         marginals[:, i], bin_edges[:, i] = np.histogram(mr[:, i], bins=nbins,
                                            range=(low[i], hi[i]), density=True)
+        mode[i] = marginals[:, i].argmax() * (hi[i] - low[i]) / float(nbins)
+        # calculate 95% confidence interval
+        ci95.append(confidence_interval(marginals[:, i], low[i], hi[i], alpha=0.95))
+        ci68.append(confidence_interval(marginals[:, i], low[i], hi[i], alpha=0.68))
+        std[i] = mr[:, i].std()
+    
     stats = {
              'marginals': marginals,
              'mean':      mean,
+             'mode':      mode,
              'bin_edges': bin_edges,
              'C':         C,
              'R':         R,
              'C_prior':   C_prior,
+             'ci68':      ci68,
+             'ci95':      ci95,
+             'std':      std,
             }
-    
-    # redimensionalize the data, this is I think not necessary
-    #for key in ('marginals', 'mean', 'bin_edges'):
-    #    stats[key] = dimensionalize(stats[key], lo_lim, hi_lim)
-    
-    logger.info("Statistics successfully calculated.")
     
     if save:
         if datadir:
@@ -483,6 +546,57 @@ def calc_stats(mr, mprior, nbins=100, lo_lim=0.0, hi_lim=1.0, save=False,
         
     return stats
 
+def confidence_interval(marg, lo_lim, hi_lim, alpha=0.68):
+    """Return confidence interval for a probability distribution
+    
+    Calculates a confidence interval for a marginal posterior probability
+    distribution. By default, it calculates a 68% confidence interval.
+    
+    Parameters
+    ----------
+    marg : array_like
+        1-d array of evenly spaced points of a probability distribution.
+        The sum of the elements of this array should be 1.0.
+    lo_lim : float
+        The upper limit of the distribution.
+    hi_lim : float
+        The lower limit of the distribution.
+    alpha : float, optional
+        Fractional probability you would like to find the CI for. Must be
+        between 0 and 1.
+    """
+    assert 0.0 < alpha < 1.0, "alpha must be between 0 and 1"
+    assert hi_lim > lo_lim, "upper limit must be greater than the lower limit"
+    nbins = marg.size
+    dx = (hi_lim - lo_lim) / float(nbins)
+    
+    p_target = (1.0 - alpha)  / 2.0
+    
+    p = 0
+    low_idx = -1
+    while p < p_target:
+        low_idx += 1
+        p_prev = p
+        dp = marg[low_idx]
+        p += dp * dx
+    excess_p = p_target - p_prev
+    dpdx = (p - p_prev) / dx
+    x_overshoot = excess_p / dpdx
+    ci_low = lo_lim + low_idx * dx - x_overshoot
+    
+    p = 0
+    hi_idx = nbins
+    while p < p_target:
+        hi_idx -= 1
+        p_prev = p
+        dp = marg[hi_idx]
+        p += dp * dx
+    excess_p = p_target - p_prev
+    dpdx = (p - p_prev) / dx
+    x_overshoot = excess_p / dpdx
+    ci_hi = hi_lim - (nbins - hi_idx) * dx + x_overshoot
+    return (ci_low, ci_hi)
+    
 def dimensionalize(val, lo_lim, hi_lim):
     return (hi_lim - lo_lim) * val + lo_lim
 
@@ -553,14 +667,13 @@ def _walk(n, m, start_idx, logP, lup, walk_num):
                 logPxp = logP[cell_idx]
                 # generate another deviate between 0 and 1
                 r = random_state.uniform()
-                accepted = np.log(r) <= (logPxp - logPmax)
+                accepted = math.log(r) <= (logPxp - logPmax)
             # we accepted a model, this is our new position in the walk
             xp[ax] = dev
             d2_prev_ax = d2_this_ax
         resampled_models[i, :] = xp.copy()
     
     np.save('_walk_tmp%i' % walk_num, resampled_models)
-    logger.info('Saved walk #%i' % walk_num)
     return True
 
 def _calc_conditional(xp, ax, m, d2, low_lim, up_lim):
@@ -581,7 +694,7 @@ def _calc_conditional(xp, ax, m, d2, low_lim, up_lim):
         intx, cell_idx = _calc_upper_intersect(xA, ax, m, cell_idx, d2, up_lim)
         len_idxs += 1
         if len_idxs > m.shape[0]:
-            logger.debug('Error: Runaway conditional! Conditional indexes > # of input models')
+            print 'Error: Runaway conditional! Conditional indexes > # of input models'
             import pdb; pdb.set_trace()
         
         intxs.append(intx)
@@ -592,8 +705,7 @@ def _calc_conditional(xp, ax, m, d2, low_lim, up_lim):
         # remained in the same cell and have to manually break the loop.
         if cell_idx == prev_cell_idx:
             # make the upper boundary the true upper limit
-            logger.debug('Error: Encountered repeat cell.')
-            import pdb; pdb.set_trace()
+            print 'Warning: Encountered repeat cell.'
             intxs[-1] = up_lim
             break
 
