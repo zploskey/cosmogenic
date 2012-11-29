@@ -3,6 +3,8 @@ import numpy as np
 import production
 import muon
 
+import scipy.integrate
+
 def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
                   postgl_shielding=0):
     """Find the resulting concentration profile for a glacial history and site.
@@ -261,6 +263,11 @@ def rand_erosion_hist(avg, sigma, n):
     """
     return np.random.normal(avg, sigma, n)
 
-def steady_erosion(z, eros_rate, t, alt, lat):
-    raise NotImplementedError()
+def steady_erosion(P, z0, eros, nuc, T, T_stop=0):
+    def z(t):
+        return eros * t + z0
+    def int_eq(t):
+        return P(z(t)) * np.exp(-nuc.LAMBDA)
+    res = scipy.integrate.quad(int_eq, T_stop, T)
+    return res
     
