@@ -264,10 +264,16 @@ def rand_erosion_hist(avg, sigma, n):
     return np.random.normal(avg, sigma, n)
 
 def steady_erosion(P, z0, eros, nuc, T, T_stop=0):
-    def z(t):
-        return eros * t + z0
+    
     def int_eq(t):
-        return P(z(t)) * np.exp(-nuc.LAMBDA)
-    res = scipy.integrate.quad(int_eq, T_stop, T)
-    return res
+        return P(z(t)) * np.exp(-nuc.LAMBDA * t)
+
+    z0 = np.atleast_1d(z0)
+    N = np.zeros_like(z0)
+    for i, depth in enumerate(z0):
+        z = lambda t: eros * t + depth
+        res, _ = scipy.integrate.quad(int_eq, T_stop, T)
+        N[i] = res
+    
+    return N
     
