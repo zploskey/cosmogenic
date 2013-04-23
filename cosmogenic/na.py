@@ -1,4 +1,4 @@
-"""Implementation of the Neighborhood Algorithm
+"""Implementation of the Neighborhood Search Algorithm and Bayesian resampling
 
 Author: Zach Ploskey (zploskey@uw.edu), University of Washington
 
