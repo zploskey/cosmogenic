@@ -13,7 +13,7 @@ import logging
 import os
 import time
 import subprocess
-import warning
+import warnings
 
 import math
 import numexpr
@@ -353,7 +353,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     logger.info('Finished importance sampling at %s' % time.asctime())
 
     if len(res) != Nw:
-        warning.warn('One of the random walks appears to have failed.')
+        warnings.warn('One of the random walks appears to have failed.')
     
     logger.info('Recombining samples from each walk...')
     mr = np.zeros((Nw * pts_per_walk, d), dtype=np.float64)
