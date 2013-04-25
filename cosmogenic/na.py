@@ -12,19 +12,25 @@ import datetime
 import logging
 import os
 import time
+import subprocess
+import warnings
 
 import math
 import numexpr
 import numpy as np
 import pylab
 
-from joblib import Parallel, delayed
-
 import util
 import walk
 
+from IPython.parallel import Client
+from IPython.parallel.error import NoEnginesRegistered
+
 logger = logging.getLogger(__name__)
 SINGLE_PROCESS_DEBUG = False
+
+MAX_IPCLUSTER_SPINUP_TIME = 10.0 # seconds
+SLEEP_TIME = 0.1 # seconds
 
 
 class NASampler(object):
@@ -268,7 +274,7 @@ def search(fn, config):
 
 
 def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
-             hi_lim=1, config=None, path=None):
+             hi_lim=1, config=None, path=None, ipy_profile=None):
     """Resample an ensemble of models.
 
     Resample an ensemble of models according to the method described
@@ -300,6 +306,14 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         pts_per_walk = config['pts_per_walk']
         lo_lim = np.atleast_1d(config['lo_lim'])
         hi_lim = np.atleast_1d(config['hi_lim'])
+        if ipy_profile in config:
+            ipy_profile = config['ipy_profile']
+
+    if ipy_profile is None:
+        subprocess.Popen('ipcluster start --daemonize --quiet', shell=True)
+
+    # wait for the cluster to spin up
+    v = _setup_engines(ipy_profile)
 
     # Number of dimensions in the model space
     d = m.shape[1]
@@ -307,6 +321,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     assert lo_lim.shape == hi_lim.shape, "Limit vectors have different shapes"
     assert lo_lim.size == d or lo_lim.size == 1
     assert hi_lim.size == d or hi_lim.size == 1
+    
     if lo_lim.size == 1:
         tmp = np.ones(d)
         lup = (lo_lim * tmp, hi_lim * tmp)
@@ -322,35 +337,30 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     start_time = time.time()
     logger.info('Start time: %s' % time.asctime(time.localtime(start_time)))
     logger.info('Generating list of random walks to perform...')
-    walk_params = ((pts_per_walk, m, wi, logP, lup, i)
-                 for i, wi in enumerate(walkstart_idxs))
+    walk_params = [(pts_per_walk, m, wi, logP, lup, i)
+                 for i, wi in enumerate(walkstart_idxs)]
 
     if SINGLE_PROCESS_DEBUG:
         # in debug mode we resample in a single process
         logger.info('Importance resampling with sequential random walks.')
-        # res = map(walk.walk_wrapper, walk_params)
-        n_jobs = 1
-        numexpr.set_num_threads(numexpr.ncores)
+        res = map(walk.walk_wrapper, walk_params)
     else:  # run in parallel
-        n_jobs = min(numexpr.ncores, Nw)
-        logger.info('Importance resampling with %i simultaneous walks...'
-            % n_jobs)
-        # we're already parallel, so run numexpr in single-threaded mode
-        numexpr.set_num_threads(1)
-
-    res = Parallel(n_jobs=n_jobs, verbose=100)(delayed(walk.walk_wrapper)(par)
-                                                for par in walk_params)
-
-    assert sum(res) == Nw, 'One of the random walks failed!'
+        logger.info('Importance resampling with parallel random walks.')
+        asr = v.map(walk.walk_wrapper, walk_params)
+        asr.wait_interactive()
+        res = asr.result
+    
     logger.info('Finished importance sampling at %s' % time.asctime())
+
+    if len(res) != Nw:
+        warnings.warn('One of the random walks appears to have failed.')
+    
     logger.info('Recombining samples from each walk...')
     mr = np.zeros((Nw * pts_per_walk, d), dtype=np.float64)
 
+    n = pts_per_walk
     for i in range(Nw):
-        cur_file = '_walk_tmp' + str(i) + '.npy'
-        n = pts_per_walk
-        mr[i * n:(i + 1) * n, :] = np.load(cur_file)
-        os.remove(cur_file)
+        mr[i * n:(i + 1) * n, :] = res[i]
 
     logger.info("Storing resampling data...")
 
@@ -367,11 +377,34 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     logger.info('Resampling finished in %i hr, %i min and %0.2f sec.'
                % (tH, tm, ts))
 
-    # return numexpr to multithreaded mode
-    numexpr.set_num_threads(numexpr.ncores)
+    if ipy_profile is None:
+        subprocess.Popen('ipcluster stop --quiet', shell=True)
 
     return mr
 
+def _setup_engines(profile):
+    tic = time.time()
+    while True:
+        try:
+            try:
+                client
+            except:
+                client = Client(profile=profile)
+            dv = client[:]
+        except (IOError, NoEnginesRegistered):
+            toc = time.time()
+            elapsed_time = toc - tic
+            assert elapsed_time < MAX_IPCLUSTER_SPINUP_TIME, \
+                "Cluster did not spin up properly in %d.1 seconds.".format(
+                    elapsed_time)
+            time.sleep(SLEEP_TIME)            
+        else:
+            break
+    
+    dv.execute('import cosmogenic.walk as walk', block=True)
+    v = client.load_balanced_view()
+
+    return v
 
 def plot_stats(stats, lo_lim, hi_lim, shape=None, m_true=None,
                labels=None):
@@ -684,8 +717,7 @@ def _walk(n, m, start_idx, logP, lup, walk_num):
             d2_prev_ax = d2_this_ax
         resampled_models[i, :] = xp.copy()
 
-    np.save('_walk_tmp%i' % walk_num, resampled_models)
-    return True
+    return resampled_models
 
 
 def _calc_conditional(xp, ax, m, d2, low_lim, up_lim):
