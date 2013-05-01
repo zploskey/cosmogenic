@@ -1,6 +1,7 @@
 numpy
 scipy
 matplotlib
+ipython
 joblib
 numexpr
 cython
