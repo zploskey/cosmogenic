@@ -1,7 +1,12 @@
+"""
+Simulate geomorphic scenarios along with CN production.
+"""
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 
-import production
-import muon
+from . import production
+from . import muon
 
 import scipy.integrate
 
@@ -62,12 +67,20 @@ def depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     postgl: time since last deglaciation (yr)
     dz: vector of glacial erosion depths during each glaciation 
     """
-    if n_gl != None:
-        if isinstance(gl, (int, long, float)):
-            gl = np.ones(n_gl) * gl
-            intergl = np.ones(n_gl) * intergl
-            dz = np.ones(n_gl) * dz
-    assert gl.size == intergl.size == dz.size
+    gl = np.atleast_1d(gl)
+    intergl = np.atleast_1d(intergl)
+    dz = np.atleast_1d(dz)
+
+    if n_gl is None:
+        n_gl = max(gl.size, intergl.size, dz.size)
+    
+    # pad them all out to be the right size
+    gl = gl * np.ones(n_gl)
+    intergl = intergl * np.ones(n_gl)
+    dz = dz * np.ones(n_gl)
+    
+    import pdb; pdb.set_trace()
+
     # interleave the two arrays
     tmp = np.column_stack((gl, intergl)).reshape(1, gl.size * 2).flatten()
     t = np.add.accumulate(np.concatenate(([0, postgl], tmp)))

@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import scipy as sp
@@ -6,7 +6,7 @@ import scipy.misc
 import scipy.integrate
 import scipy.interpolate
 
-import scaling
+from cosmogenic import scaling
 
 SEC_PER_YEAR = 3.15576 * 10 ** 7 # seconds per year
 ALPHA = 0.75 # empirical constant from Heisinger
@@ -312,12 +312,3 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
                 'deltaH': deltaH,
                 }
                 
-if __name__ == '__main__':
-    import nuclide
-    import pprint
-    be10 = nuclide.Be10Qtz()
-    z = 0
-    h = 0
-    p_mu = P_mu_total(z, h, nuc=be10, full_data=True)
-    pp = pprint.PrettyPrinter()
-    pp.pprint(p_mu)

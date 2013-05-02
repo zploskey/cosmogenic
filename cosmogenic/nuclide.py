@@ -1,11 +1,12 @@
-#!/usr/bin/python
 """
 Cosmogenic nuclide classes to hold important constants
 """
+from __future__ import division, print_function, unicode_literals
+
 import numpy as np
 import math
 
-import muon
+from . import muon
 
 ALPHA = 0.75
 P10_REF_ST = 4.49 # atoms / g / yr

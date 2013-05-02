@@ -1,8 +1,8 @@
-#!/usr/bin/python
-
 """
 Functions to calculation production rates
 """
+
+from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import numexpr as ne
@@ -11,10 +11,10 @@ import joblib
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import dfitpack
 
-import muon
-import scaling as scal
+from . import muon
+from . import scaling as scal
 
-LAMBDA_h = 155.0 # attenuation length of hadronic component in atm, g / cm2
+LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
 LAMBDA_fast = 4320.0 # after Heisinger 2002
 
 def P_sp(z, n, scaling=None, alt=0, lat=75):

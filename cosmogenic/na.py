@@ -5,8 +5,7 @@ Author: Zach Ploskey (zploskey@uw.edu), University of Washington
 Implementation of the Neighborhood Algorithm after Sambridge (1999)
 in Geophys. J. Int.
 """
-
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
 
 import datetime
 import logging
@@ -20,8 +19,8 @@ import numexpr
 import numpy as np
 import pylab
 
-import util
-import walk
+from . import util
+from . import walk
 
 from IPython.parallel import Client
 from IPython.parallel.error import NoEnginesRegistered
@@ -197,15 +196,15 @@ class NASampler(object):
                 idx += 1
             self.np += ns
             minimum = self.chosen_misfits[0]
-            print "Min: %0.4g, iter %i, %i models" % (minimum, it, idx + 1)
+            print("Min: %0.4g, iter %i, %i models" % (minimum, it, idx + 1))
             it += 1
             ns = self.ns
 
         end_time = time.time()
-        print 'End time:', time.asctime(time.localtime(end_time))
+        print('End time:', time.asctime(time.localtime(end_time)))
         runtime = end_time - start_time
-        print 'Inversion took %i minutes and %0.2f seconds.' % (
-                round(runtime / 60), runtime % 60)
+        print('Inversion took %i minutes and %0.2f seconds.' % (
+                round(runtime / 60), runtime % 60))
         return True
 
     def generate_random_models(self, n=None):
@@ -343,7 +342,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     if SINGLE_PROCESS_DEBUG:
         # in debug mode we resample in a single process
         logger.info('Importance resampling with sequential random walks.')
-        res = map(walk.walk_wrapper, walk_params)
+        res = list(map(walk.walk_wrapper, walk_params))
     else:  # run in parallel
         logger.info('Importance resampling with parallel random walks.')
         asr = v.map(walk.walk_wrapper, walk_params)
@@ -738,7 +737,7 @@ def _calc_conditional(xp, ax, m, d2, low_lim, up_lim):
         intx, cell_idx = _calc_upper_intersect(xA, ax, m, cell_idx, d2, up_lim)
         len_idxs += 1
         if len_idxs > m.shape[0]:
-            print 'Error: Runaway conditional! Conditional idx > num. models'
+            print('Error: Runaway conditional! Conditional idx > num. models')
             import pdb
             pdb.set_trace()
 
@@ -750,7 +749,7 @@ def _calc_conditional(xp, ax, m, d2, low_lim, up_lim):
         # remained in the same cell and have to manually break the loop.
         if cell_idx == prev_cell_idx:
             # make the upper boundary the true upper limit
-            print 'Warning: Encountered repeat cell.'
+            print('Warning: Encountered repeat cell.')
             intxs[-1] = up_lim
             break
 
