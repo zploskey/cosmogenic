@@ -27,3 +27,4 @@ cythonize.dat
 *.lo
 *.so
 *.la
+*.bak

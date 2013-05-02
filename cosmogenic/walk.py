@@ -1,6 +1,6 @@
 # walk.py
 
-from . import na
+from cosmogenic import na
 
 def walk_wrapper(w):
     """ Wrapper function for paralle call to the na._walk function. """

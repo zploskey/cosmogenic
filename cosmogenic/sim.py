@@ -5,8 +5,8 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 
-from . import production
-from . import muon
+from cosmogenic import production
+from cosmogenic import muon
 
 import scipy.integrate
 

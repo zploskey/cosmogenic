@@ -11,8 +11,8 @@ import joblib
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import dfitpack
 
-from . import muon
-from . import scaling as scal
+from cosmogenic import muon
+from cosmogenic  import scaling as scal
 
 LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
 LAMBDA_fast = 4320.0 # after Heisinger 2002

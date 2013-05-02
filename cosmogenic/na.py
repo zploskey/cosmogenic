@@ -19,8 +19,8 @@ import numexpr
 import numpy as np
 import pylab
 
-from . import util
-from . import walk
+from cosmogenic import util
+from cosmogenic import walk
 
 from IPython.parallel import Client
 from IPython.parallel.error import NoEnginesRegistered
