@@ -20,7 +20,6 @@ import numpy as np
 import pylab
 
 from cosmogenic import util
-from cosmogenic import walk
 
 from IPython.parallel import Client
 from IPython.parallel.error import NoEnginesRegistered
@@ -342,10 +341,10 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     if SINGLE_PROCESS_DEBUG:
         # in debug mode we resample in a single process
         logger.info('Importance resampling with sequential random walks.')
-        res = list(map(walk.walk_wrapper, walk_params))
+        res = list(map(walk_wrapper, walk_params))
     else:  # run in parallel
         logger.info('Importance resampling with parallel random walks.')
-        asr = v.map(walk.walk_wrapper, walk_params)
+        asr = v.map(walk_wrapper, walk_params)
         asr.wait_interactive()
         res = asr.result
     
@@ -381,6 +380,10 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
 
     return mr
 
+def walk_wrapper(w):
+    """ Wrapper function for paralle call to the na._walk function. """
+    return na._walk(w[0], w[1], w[2], w[3], w[4], w[5])
+
 def _setup_engines(profile):
     tic = time.time()
     while True:
@@ -404,6 +407,7 @@ def _setup_engines(profile):
     v = client.load_balanced_view()
 
     return v
+
 
 def plot_stats(stats, lo_lim, hi_lim, shape=None, m_true=None,
                labels=None):

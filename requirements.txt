@@ -1,6 +1,7 @@
 numpy
 scipy
 matplotlib
+pyzmq
 ipython
 joblib
 numexpr
