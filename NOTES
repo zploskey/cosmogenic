@@ -1,0 +1,7 @@
+
+
+Build documentation using:
+make html
+
+Original sphinx build command from base directory of repo:
+sphinx-apidoc -F -A "Zach Ploskey" -H Cosmogenic -V 0.1 -R 0.1.1 -o doc cosmogenic

@@ -1,22 +1,30 @@
 #!/usr/bin/env python
 
-# we'll support python 2.6 and newer
-from __future__ import division, print_function, unicode_literals
-
 from distutils.core import setup
 
-try:
-    from Cython.Build import cythonize
-except ImportError as e:
-    print("Cython is required.", e.value)
-    raise ImportError
-
-setup(name = 'cosmogenic',
-      version = '0.1',
-      description = 'Library for modeling cosmogenic nuclides',
-      author = 'Zach Ploskey',
-      author_email = 'zploskey@uw.edu',
-      packages = ['cosmogenic'],
-      ext_modules = cythonize(["cosmogenic/*.pyx", "cosmogenic/*.pyd"],
-                              exclude_failures=False),
-)
+setup(
+    name = "cosmogenic",
+    packages = ["cosmogenic"],
+    version = "0.1.0",
+    description = "Library for modeling cosmogenic nuclides",
+    long_description=joblib.__doc__,
+    author = "Zach Ploskey",
+    author_email = "zploskey@gmail.com",
+    url = "http://github.com/cosmogenic/cosmogenic",
+    keywords = ["cosmic rays", "geomorphology", "modeling"],
+    classifiers = [
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Science/Research",
+        "Operating System :: OS Independent",
+        ],
+    requires=[
+        "numpy (>=1.6)",
+        "scipy (>=0.11)",
+        "matplotlib (>=1.1)",
+        "ipython (>=0.14)",
+        "numexpr (>=2.0)",
+        "joblib (>=0.6),
+        ],
+) 

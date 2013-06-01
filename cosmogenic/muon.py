@@ -175,19 +175,18 @@ ranges = np.array([0.8516, 1.542, 2.866, 5.70, 9.15, 26.76, 36.96, 58.79, 93.32,
                    104000, 130200, 212900])
 max_range = ranges[-1]
 # interpolate the muon momentum and range relationship
-log_LZ_interp_base = sp.interpolate.interp1d(np.log(ranges), np.log(momentums))
+LofZ = sp.interpolate.UnivariateSpline(ranges, momentums)
 
-def log_LZ_interp(z):
-    slope = sp.misc.derivative(log_LZ_interp_base, np.log(212899),
-            dx=2e-6)
+def LZ_interp(z):
     bad_idxs = z > np.log(max_range)
     good_idxs = np.logical_not(bad_idxs)
     out = np.empty_like(z)
-    out[good_idxs] = log_LZ_interp_base(z[good_idxs])
+    out[good_idxs] = LofZ(z[good_idxs])
     if not good_idxs.all():
-        b = log_LZ_interp_base(np.log(max_range))
-        log_gt_max = z[bad_idxs] - np.log(max_range)
-        out[bad_idxs] = b + slope * log_gt_max
+        slope = LofZ(max_range, 1) # first derivative
+        b = LofZ(max_range)
+        overshoot = z[bad_idxs] - max_range
+        out[bad_idxs] = b + slope * overshoot
     return out
 
 def LZ(z):
@@ -197,9 +196,7 @@ def LZ(z):
     From Heisinger 2002
     """
     zs = np.atleast_1d(z).copy() # make a copy so we don't change this stuff
-    zs[zs < 1] = 1 # make sure we don't take the log of anything < 1
-    
-    P_MeVc = np.exp(log_LZ_interp(np.log(zs)))
+    P_MeVc = LZ_interp(zs)
 
     atten_len = 263.0 + 150.0 * (P_MeVc / 1000.0)
     return atten_len

@@ -10,6 +10,24 @@ from cosmogenic import muon
 
 import scipy.integrate
 
+def nexpose(P, nuclide, z, t, tol=1e-4):
+    """
+    Calculate concentrations for an arbitrary depth
+    history z(t).
+
+    :math:`\\int^t_0 P(z(t)) \\exp(-\\lambda t) dt`
+    """
+
+    # define the integrand: instantaneous production and decay
+    def p(t):
+        return P(z(t)) * np.exp(-nuclide.LAMBDA * t)
+
+    res = scipy.integrate.quad(p, 0.0, t, epsrel=tol)
+    C = res[0]
+    err = res[1]
+    return C, err
+
+
 def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
                   postgl_shielding=0):
     """Find the resulting concentration profile for a glacial history and site.

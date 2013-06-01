@@ -11,8 +11,8 @@ def test_phi_sl():
     pass
 
 def test_P_mu_total():
-    z = np.linspace(0, 280000.0, 30000)
     be10 = nuclide.Be10Qtz()
+    z = np.linspace(0, 1000, 20)
     res = muon.P_mu_total(z, 126.0, be10)
     print res
     assert res.size == z.size, "Input and output sizes are inconsistent"
