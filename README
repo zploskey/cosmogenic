@@ -13,3 +13,40 @@ scaling:       functions for scaling
 sim:           geomorphic and exposure models
 util:          utility functions
 datareduction: functions for reducing AMS data (work in progress)
+
+Installation
+------------
+
+To work properly, Cosmogenic expects that you have already installed a recent
+version of the SciPy stack. See here for your options:
+http://www.scipy.org/install.html
+
+Advanced Installation
+---------------------
+
+Installing using pip on Linux (Debian 7):
+
+We must first install several dependencies:
+
+sudo apt-get install libatlas-base-dev gfortran libfreetype6-dev libpng-dev
+
+This may be necessary, but might be overkill:
+
+sudo apt-get build-dep python-matplotlib
+
+Otherwise, If you want interactive plotting you will want to install at least
+onebackend for matplotlib as well. Tk is well supported:
+
+sudo apt-get install tk tk-dev
+pip install numpy
+pip install -r pip-requirements
+
+cd /path/to/cosmogenic/code
+
+pip install .
+
+Once we are listed on PyPI it should be possible to use:
+
+pip install cosmogenic
+
+But we're not quite there yet.

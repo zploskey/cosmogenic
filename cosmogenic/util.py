@@ -6,9 +6,9 @@ from __future__ import division, print_function, unicode_literals
 import os
 
 try:
-    import cPickle as pickle
+    import cPickle as pkl
 except ImportError:
-    import pickle
+    import pickle as pkl
 
 def unpickle(filename):
     """
@@ -16,7 +16,7 @@ def unpickle(filename):
     """
     path = os.path.abspath(filename)
     with open(path, 'r') as fd:
-        payload = pickle.load(fd)
+        payload = pkl.load(fd)
     return payload
 
 
@@ -32,4 +32,4 @@ def pickle(obj, filename, path=None):
 
     file_path = os.path.join(path, filename)
     with open(file_path, 'wb') as fd:
-        pickle.dump(obj, fd)
+        pkl.dump(obj, fd)

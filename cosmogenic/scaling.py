@@ -13,7 +13,8 @@ ELEVATION_LIMIT = 44330.76923076923
 def alt_to_p(z):
     """
     Convert elevation z in meters to pressure in hPa.
-    Valid at midlatitudes and areas where pressure variation is not anomalous.
+    Valid at midlatitudes and areas where pressure variation is not
+    anomalous.
 
     Stone (2000) J. Geophys. Res., 105(B10), 23,753-23,759. Eq. 1
     """
@@ -63,7 +64,8 @@ def stone2000_sp(lat, alt=None, P=None, interp='spline'):
     n_lats = 10
     # calculate scaling factors for index latitudes at sea level
     S_lambda_idx = np.zeros(n_lats)
-    S_lambda_idx[0:n_ref] = a + b * np.exp(-P / 150.0) + c * P + d * P**2 + e * P**3
+    S_lambda_idx[0:n_ref] = (a + b * np.exp(-P / 150.0) + c * P + d
+						     * P**2 + e * P**3)
     S_lambda_idx[n_ref:n_lats] = S_lambda_idx[n_ref-1]
 
     # interpolate between the index latitude scaling factors

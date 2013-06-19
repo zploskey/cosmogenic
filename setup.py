@@ -7,7 +7,6 @@ setup(
     packages = ["cosmogenic"],
     version = "0.1.0",
     description = "Library for modeling cosmogenic nuclides",
-    long_description=joblib.__doc__,
     author = "Zach Ploskey",
     author_email = "zploskey@gmail.com",
     url = "http://github.com/cosmogenic/cosmogenic",
@@ -25,6 +24,6 @@ setup(
         "matplotlib (>=1.1)",
         "ipython (>=0.14)",
         "numexpr (>=2.0)",
-        "joblib (>=0.6),
+        "joblib (>=0.6)",
         ],
 ) 

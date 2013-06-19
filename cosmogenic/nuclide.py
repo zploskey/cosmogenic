@@ -19,7 +19,7 @@ class Be10Qtz():
     """
 
     def __init__(self, constants='stone'):
-        self.Natoms = 2.0046e22 # atoms of O / g quartz, from John's program
+        self.Natoms = 2.0046e22 # atoms of O / g quartz
         self.LAMBDA = 4.998e-7
         
         # probability factors from Heisinger et al. 2002b
@@ -113,7 +113,6 @@ class Al26Qtz():
         return 4.40538328952 * concentration**(-0.32879674)
     
     def measurement_error(self, concentration):
-
         return concentration * self.relative_error(concentration)
 
 class Cl36Kfeld():
