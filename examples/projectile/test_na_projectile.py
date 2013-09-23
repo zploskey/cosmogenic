@@ -27,7 +27,7 @@ conf = {
     "m_true": np.array([ 0.0, 100.0, 0.0, 100.0]),
     # resampling
     'Nw': 16,
-    'pts_per_walk': 1,
+    'pts_per_walk': 10,
 }
 conf['ts'] = np.linspace(2, 20, 1000)
 conf['dof'] = conf['ts'].size - conf['d']
