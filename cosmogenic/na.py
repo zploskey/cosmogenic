@@ -30,7 +30,6 @@ SINGLE_PROCESS_DEBUG = False
 MAX_IPCLUSTER_SPINUP_TIME = 10.0 # seconds
 SLEEP_TIME = 0.1 # seconds
 
-
 class NASampler(object):
     """ Samples a parameter space using the Neighborhood Algorithm."""
 

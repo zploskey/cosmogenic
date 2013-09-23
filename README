@@ -28,7 +28,7 @@ Installing using pip on Linux (Debian 7):
 
 We must first install several dependencies:
 
-sudo apt-get install libatlas-base-dev gfortran libfreetype6-dev libpng-dev
+sudo apt-get install libatlas-base-dev gfortran libfreetype6-dev libpng-dev libhdf5-dev
 
 This may be necessary, but might be overkill:
 
