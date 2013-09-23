@@ -34,7 +34,7 @@ class NASampler(object):
     """ Samples a parameter space using the Neighborhood Algorithm."""
 
     def __init__(self, fn, ns=10, nr=2, lo_lim=0.0, hi_lim=1.0, d=1, ne=10000,
-                 config=None, description='', n_initial=None):
+                 config=None, description='', n_initial=None, seed=None):
         """Create an NASampler to sample a parameter space using the
         Neighborhood algorithm.
 
@@ -68,6 +68,11 @@ class NASampler(object):
                 self.n_initial = config['n_initial']
             else:
                 self.n_initial = self.ns
+
+            if 'seed' in config:
+                self.seed = config['seed']
+            else:
+                self.seed = None
         else:
             self.d = d  # model length
             self.description = description
@@ -80,6 +85,7 @@ class NASampler(object):
                 self.n_initial = self.ns
             else:
                 self.n_initial = n_initial
+            self.seed = seed
 
         assert self.hi_lim.shape == self.lo_lim.shape, \
             'Limits must have the same shape.'
@@ -94,6 +100,9 @@ class NASampler(object):
         self.np = 0  # number of previous models
         self.lo_lim_nondim = 0.0
         self.hi_lim_nondim = 1.0
+
+        if self.seed is not None:
+            np.random.seed(self.seed)
 
     def dimensionalize(self, x):
         return self.lo_lim + (self.hi_lim - self.lo_lim) * x
