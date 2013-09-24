@@ -9,21 +9,19 @@ from distutils.extension import Extension
 
 def is_source_pkg():
     cwd = os.path.abspath(os.path.dirname(__file__))
-    return not os.path.exists(os.path.join(cwd, "PKG-INFO"))
-
-ext_names = ["na"]
+    return os.path.exists(os.path.join(cwd, "PKG-INFO"))
 
 def get_exts():
+    paths = glob.glob("cosmogenic/*.pyx")
     if is_source_pkg():
         exts = []
-        paths = glob.glob("cosmogenic/*.pyx")
         for mod_path in paths:
             mod = os.path.join("cosmogenic", 
                 mod_path.split(os.sep)[-1].split(".")[0])
             exts.append(Extension(mod, [mod_path])) 
     else:
         from Cython.Build import cythonize
-        parallel_builds = 1.5 * multiprocessing.cpu_count()
+        parallel_builds = int(1.5 * multiprocessing.cpu_count())
         exts = cythonize("cosmogenic/*.pyx", nthreads=parallel_builds)
     return exts 
 

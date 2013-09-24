@@ -389,8 +389,8 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     return mr
 
 def walk_wrapper(w):
-    """ Wrapper function for paralle call to the na._walk function. """
-    return na._walk(w[0], w[1], w[2], w[3], w[4], w[5])
+    """ Wrapper function for paralle call to the _walk function. """
+    return _walk(w[0], w[1], w[2], w[3], w[4], w[5])
 
 def _setup_engines(profile):
     tic = time.time()
