@@ -691,7 +691,6 @@ def _walk(n, m, start_idx, logP, lup, walk_num):
 
     # don't dare overwrite our ensemble data, copy our walk position
     xp = m[start_idx].copy()
-    #mean = np.zeros(d)
     d2_prev_ax = np.zeros(Ne)
     d2 = numexpr.evaluate('sum((m - xp) ** 2, axis=1)')
     cell_idx = np.argmin(d2)
