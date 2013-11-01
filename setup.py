@@ -47,7 +47,6 @@ setup(
         "matplotlib (>=1.1)",
         "ipython (>=0.14)",
         "numexpr (>=2.0)",
-        "joblib (>=0.6)",
         ],
     ext_modules = get_exts(),
 ) 
