@@ -6,6 +6,7 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import numexpr as ne
+import joblib
 
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import dfitpack
