@@ -1,11 +1,12 @@
-"""Implementation of the Neighborhood Search Algorithm and Bayesian resampling
+"""
+Implementation of the Neighborhood Search Algorithm and Bayesian resampling
 
 Author: Zach Ploskey (zploskey@uw.edu), University of Washington
 
-Implementation of the Neighborhood Algorithm after Sambridge (1999)
+Implementation of the Neighborhood Algorithm after Sambridge (1999a,b)
 in Geophys. J. Int.
 """
-from __future__ import division, print_function, unicode_literals
+from __future__ import division, print_function
 
 import datetime
 import logging
@@ -89,10 +90,10 @@ class NASampler(object):
 
         assert self.hi_lim.shape == self.lo_lim.shape, \
             'Limits must have the same shape.'
-        n_models = self.ne + (self.ne % self.ns)
+
         self.date = datetime.datetime.now()
-        self.m = np.zeros((n_models, self.d))
-        self.misfit = np.zeros(n_models)
+        self.m = np.zeros((self.ne, self.d))
+        self.misfit = np.zeros(self.ne)
         self.mdim = np.zeros(self.m.shape)
         self.fn = fn  # function to minimize
         self.chosen_misfits = np.ones(self.nr) * np.inf
@@ -177,13 +178,13 @@ class NASampler(object):
         while (self.np < n):
 
             if it != 1 and self.np != 0:
-                new_models = self.select_new_models()
-                end_idx = self.np + ns
+                end_idx = self.np + self.ns
+
                 if end_idx > n:
                     ns = n - self.np
-                    new_models = new_models[0:ns]
                     end_idx = n
-                self.m[self.np:end_idx, :] = new_models
+
+                self.m[self.np:end_idx, :] = self.select_new_models(ns)
             # calculate the misfit function for our ns models
             # record the best (lowest) ones so far
             for j in range(ns):
@@ -207,6 +208,7 @@ class NASampler(object):
             it += 1
             ns = self.ns
 
+
         end_time = time.time()
         print('End time:', time.asctime(time.localtime(end_time)))
         runtime = end_time - start_time
@@ -221,23 +223,25 @@ class NASampler(object):
 
         return np.random.random_sample((n, self.d))
 
-    def select_new_models(self):
+    def select_new_models(self, ns=None):
         """ Returns a 2D ndarray where each row is newly selected model.
 
         Selects new models using the Gibbs Sampler method from the
         Voronoi cells of the best models found so far.
         """
+        if ns is None:
+            ns = self.ns
 
         chosen_models = self.best_nr_models()
-        new_models = np.zeros((self.ns, self.d))
+        new_models = np.zeros((ns, self.d))
         m = self.m[:self.np, :]  # select all previous models
         sample_idx = 0
         # Loop through all the voronoi cells
         for chosen_idx, vk in enumerate(chosen_models):
-            n_take = int(np.floor(self.ns / self.nr))
+            n_take = int(np.floor(ns / self.nr))
             if chosen_idx == 0:
                 # Give any remaining samples to our best model
-                n_take += int(np.floor(self.ns % self.nr))
+                n_take += int(np.floor(ns % self.nr))
             k = self.lowest_idxs[chosen_idx]
             d2_prev_ax = np.zeros(self.np)
             # Vector of perpendicular distances to cell boundaries along the
@@ -314,6 +318,10 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         hi_lim = np.atleast_1d(config['hi_lim'])
         if ipy_profile in config:
             ipy_profile = config['ipy_profile']
+        if "seed" in config:
+            seed = config["seed"]
+        else:
+            seed = None
 
     if ipy_profile is None:
         subprocess.Popen('ipcluster start --daemonize --quiet', shell=True)
@@ -343,7 +351,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     start_time = time.time()
     logger.info('Start time: %s' % time.asctime(time.localtime(start_time)))
     logger.info('Generating list of random walks to perform...')
-    walk_params = [(pts_per_walk, m, wi, logP, lup, i)
+    walk_params = [(pts_per_walk, m, wi, logP, lup, i, seed)
                  for i, wi in enumerate(walkstart_idxs)]
 
     if SINGLE_PROCESS_DEBUG:
@@ -390,7 +398,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
 
 def walk_wrapper(w):
     """ Wrapper function for paralle call to the _walk function. """
-    return _walk(w[0], w[1], w[2], w[3], w[4], w[5])
+    return _walk(w[0], w[1], w[2], w[3], w[4], w[5], w[6])
 
 def _setup_engines(profile):
     tic = time.time()
@@ -411,7 +419,7 @@ def _setup_engines(profile):
         else:
             break
     
-    dv.execute('import cosmogenic.walk as walk', block=True)
+    dv.execute('from cosmogenic.na import _walk', block=True)
     v = client.load_balanced_view()
 
     return v
@@ -492,8 +500,9 @@ def resample_and_plot(conf):
                        save=True)
     shape = conf['shape'] if 'shape' in conf else None
     m_true = conf['m_true'] if 'm_true' in conf else None
-    plot_stats(stats, conf['lo_lim'], conf['hi_lim'], shape=shape,
-               m_true=m_true)
+    if ("plot" not in conf) or conf["plot"]:
+        plot_stats(stats, conf['lo_lim'], conf['hi_lim'], shape=shape,
+                   m_true=m_true)
     return stats
 
 
@@ -667,7 +676,7 @@ def nondimensionalize(val, lo_lim, hi_lim):
     return (val - lo_lim) / (hi_lim - lo_lim)
 
 
-def _walk(n, m, start_idx, logP, lup, walk_num):
+def _walk(n, m, start_idx, logP, lup, walk_num, seed):
     """ Produces models in a random walk over the initial ensemble.
 
     Models should have a sampling density that approximates the model space
@@ -678,7 +687,13 @@ def _walk(n, m, start_idx, logP, lup, walk_num):
     """
     # Each walk should have an independent random state so we do not overlap
     # in the numbers generated in each walk.
-    random_state = np.random.RandomState()
+
+    if seed is not None:
+        walk_seed = seed * (walk_num + 1)
+    else:
+        walk_seed = None
+
+    random_state = np.random.RandomState(walk_seed)
 
     # Number of models in the ensemble
     Ne = m.shape[0]
@@ -767,21 +782,28 @@ def _calc_conditional(xp, ax, m, d2, low_lim, up_lim):
     idxs.pop()
     return intxs, idxs
 
-
 def _calc_upper_intersect(xp, ax, m, cell_idx, d2, up_lim):
-    """Calculate the upper intersection of the cell and the axis. """
+    """Calculate the upper intersection of the cell and the axis. 
+    
+    xp: the previous model
+    ax: the current axis (int)
+    m:  all the models
+    cell_idx: index of the current cell
+    d2: squared distances
+    """
     vki = m[cell_idx, ax]
     vji = m[:, ax]
+    dx = vki - vji
     # squared perpendicular distance to the axis from vk
     dk2 = d2[cell_idx]
     # calculate upper intersection point
-    x = numexpr.evaluate('0.5 * (vki + vji + (dk2 - d2) / (vki - vji))')
+    x = numexpr.evaluate('0.5 * (vki + vji + (dk2 - d2) / dx)')
     x[cell_idx] = np.inf
     x[x <= xp[ax]] = np.inf
 
     hi_idx = np.argmin(x)
     xu = x[hi_idx]
-    if up_lim < xu:
+    if up_lim <= xu:
         xu = up_lim
         hi_idx = -1
 
