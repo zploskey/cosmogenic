@@ -22,11 +22,11 @@ conf = {
     "lo_lim": np.array([ -50,   0, -100,    0], dtype=np.float64),  
     "hi_lim": np.array([  50, 200,  100,  200], dtype=np.float64),
     "d": 4,
-    "ne": 250,
+    "ne": 1000,
     "shape": (4, 1),
     "m_true": np.array([ 0.0, 100.0, 0.0, 100.0]),
     # resampling
-    'Nw': 10,
+    'Nw': 20,
     'pts_per_walk': 100,
     # for benchmarking
     'seed': 10453,
