@@ -24,10 +24,10 @@ conf = {
     "d": 4,
     "ne": 1000,
     "shape": (4, 1),
-    "m_true": np.array([ 0.0, 100.0, 0.0, 100.0]),
+    "m_true": np.array([ 0.0, 100.0, 0.0, 100.0], dtype=np.float64),
     # resampling
-    'Nw': 20,
-    'pts_per_walk': 100,
+    'Nw': 2,
+    'pts_per_walk': 500,
     # for benchmarking
     'seed': 10453,
     'plot': False,

@@ -4,8 +4,8 @@ import glob
 import multiprocessing
 import os
 
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup
+from setuptools.extension import Extension
 
 def is_source_pkg():
     cwd = os.path.abspath(os.path.dirname(__file__))
