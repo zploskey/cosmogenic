@@ -26,8 +26,8 @@ conf = {
     "shape": (4, 1),
     "m_true": np.array([ 0.0, 100.0, 0.0, 100.0], dtype=np.float64),
     # resampling
-    'Nw': 2,
-    'pts_per_walk': 500,
+    'Nw': 48,
+    'pts_per_walk': 100,
     # for benchmarking
     'seed': 10453,
     'plot': False,
@@ -49,4 +49,4 @@ def fn(m):
     return misfit
 
 #na.SINGLE_PROCESS_DEBUG = True
-na.run(fn, conf)
+na.search(fn, conf)
