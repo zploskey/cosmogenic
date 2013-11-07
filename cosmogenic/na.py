@@ -12,10 +12,8 @@ import datetime
 import logging
 import os
 import time
-import subprocess
 import warnings
 
-import math
 import numpy as np
 import pylab
 
@@ -28,8 +26,8 @@ from cosmogenic import na_resample
 logger = logging.getLogger(__name__)
 SINGLE_PROCESS_DEBUG = False
 
-MAX_IPCLUSTER_SPINUP_TIME = 10.0 # seconds
-SLEEP_TIME = 0.1 # seconds
+MAX_IPCLUSTER_SPINUP_TIME = 10.0  # seconds
+SLEEP_TIME = 0.1  # seconds
 
 class NASampler(object):
     """ Samples a parameter space using the Neighborhood Algorithm."""
@@ -316,18 +314,17 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         pts_per_walk = config['pts_per_walk']
         lo_lim = np.atleast_1d(config['lo_lim'])
         hi_lim = np.atleast_1d(config['hi_lim'])
+
         if ipy_profile in config:
             ipy_profile = config['ipy_profile']
+
         if "seed" in config:
             seed = config["seed"]
         else:
             seed = None
 
-    if ipy_profile is None:
-        subprocess.Popen('ipcluster start --daemonize --quiet', shell=True)
-
-    # wait for the cluster to spin up
-    v = _setup_engines(ipy_profile)
+    if ipy_profile is not None:
+        v = _setup_engines(ipy_profile)
 
     # Number of dimensions in the model space
     d = m.shape[1]
@@ -335,7 +332,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     assert lo_lim.shape == hi_lim.shape, "Limit vectors have different shapes"
     assert lo_lim.size == d or lo_lim.size == 1
     assert hi_lim.size == d or hi_lim.size == 1
-    
+
     if lo_lim.size == 1:
         tmp = np.ones(d)
         lup = (lo_lim * tmp, hi_lim * tmp)
@@ -354,7 +351,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     walk_params = [(pts_per_walk, m, wi, logP, lup, i, seed)
                  for i, wi in enumerate(walkstart_idxs)]
 
-    if SINGLE_PROCESS_DEBUG:
+    if SINGLE_PROCESS_DEBUG or ipy_profile is None:
         # in debug mode we resample in a single process
         logger.info('Importance resampling with sequential random walks.')
         res = list(map(walk_wrapper, walk_params))
@@ -363,12 +360,12 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         asr = v.map(walk_wrapper, walk_params)
         asr.wait_interactive()
         res = asr.result
-    
+
     logger.info('Finished importance sampling at %s' % time.asctime())
 
     if len(res) != Nw:
         warnings.warn('One of the random walks appears to have failed.')
-    
+
     logger.info('Recombining samples from each walk...')
     mr = np.zeros((Nw * pts_per_walk, d), dtype=np.float64)
 
@@ -391,14 +388,13 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     logger.info('Resampling finished in %i hr, %i min and %0.2f sec.'
                % (tH, tm, ts))
 
-    if ipy_profile is None:
-        subprocess.Popen('ipcluster stop --quiet', shell=True)
-
     return mr
+
 
 def walk_wrapper(w):
     """ Wrapper function for paralle call to the _walk function. """
     return na_resample._walk(w[0], w[1], w[2], w[3], w[4], w[5], w[6])
+
 
 def _setup_engines(profile):
     tic = time.time()
@@ -415,10 +411,10 @@ def _setup_engines(profile):
             assert elapsed_time < MAX_IPCLUSTER_SPINUP_TIME, \
                 "Cluster did not spin up properly in %d.1 seconds.".format(
                     elapsed_time)
-            time.sleep(SLEEP_TIME)            
+            time.sleep(SLEEP_TIME)
         else:
             break
-    
+
     dv.execute('from cosmogenic import na_resample', block=True)
     v = client.load_balanced_view()
 

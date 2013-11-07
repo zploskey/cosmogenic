@@ -26,7 +26,7 @@ conf = {
     "shape": (4, 1),
     "m_true": np.array([ 0.0, 100.0, 0.0, 100.0], dtype=np.float64),
     # resampling
-    'Nw': 48,
+    'Nw': 24,
     'pts_per_walk': 100,
     # for benchmarking
     'seed': 10453,
@@ -38,7 +38,6 @@ conf['dof'] = conf['ts'].size - conf['d']
 sigma_obs = 1.0 # meters
 pos_true = positions(conf['m_true'], conf['ts'])
 
-util.pickle(conf, 'conf.pkl')
 
 def chi2v(pre, obs, sigma_obs, nu):
     return (((obs - pre) / sigma_obs)**2).sum() / nu
@@ -48,5 +47,7 @@ def fn(m):
     misfit = chi2v(pos, pos_true, sigma_obs, conf['dof'])
     return misfit
 
-#na.SINGLE_PROCESS_DEBUG = True
-na.search(fn, conf)
+
+if __name__ == "__main__":
+    util.pickle(conf, 'conf.pkl')
+    na.search(fn, conf)

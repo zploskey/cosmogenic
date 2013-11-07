@@ -1,77 +1,171 @@
+# cython: profile=True
+# cython: cdivision=True
+
 from __future__ import division
+
+from libc.math cimport log
 
 import numpy as np
 cimport numpy as np
 
-from libc.math cimport log
+import cython
+cimport cython
 
-def _calc_upper_intersect(xp, ax, m, cell_idx, d2, up_lim):
-    """Calculate the upper intersection of the cell and the axis. 
-    
-    xp: the previous model
-    ax: the current axis (int)
-    m:  all the models
-    cell_idx: index of the current cell
-    d2: squared distances
-    """
-    vki = m[cell_idx][ax]
-    vji = m[:,ax]
-    dx = vki - vji
-    # squared perpendicular distance to the axis from vk
-    dk2 = d2[cell_idx]
-    # calculate upper intersection point
-    x = 0.5 * (vki + vji + (dk2 - d2) / dx)
-    x[cell_idx] = np.inf
-    x[x <= xp[ax]] = np.inf
-
-    hi_idx = np.argmin(x)
-    xu = x[hi_idx]
-    if up_lim <= xu:
-        xu = up_lim
-        hi_idx = -1
-
-    return (xu, hi_idx)
+DTYPE = float
+ctypedef cython.floating DTYPE_t
 
 
-def _calc_conditional(xp, ax, m, d2, low_lim, up_lim):
-    """Calculate the conditional probability distribution along the axis. """
-    xA = xp.copy()
-    xA[ax] = low_lim
-    # calculate distances to the lowest point on this axis
-    m_thisax = m[:,ax]
-    xA_thisax = xA[ax]
-    d2lowedge = d2 + (m_thisax - xA_thisax) ** 2
-    cell_idx = np.argmin(d2lowedge)
+cdef inline int argmin(np.ndarray[DTYPE_t, ndim=1] a):
+    cdef DTYPE_t amin = a[0]
+    cdef int i, lowi = 0
+    for i in range(a.shape[0]):
+        if a[i] < amin:
+            lowi = i
+            amin = a[i]
 
-    intxs = []
-    idxs = [cell_idx]
-    len_idxs = 1
-    while cell_idx != -1:
-        prev_cell_idx = cell_idx
-        intx, cell_idx = _calc_upper_intersect(xA, ax, m, cell_idx, d2, up_lim)
-        len_idxs += 1
-        if len_idxs > m.shape[0]:
-            print('Error: Runaway conditional! Conditional idx > num. models')
-            import pdb
-            pdb.set_trace()
+    return lowi
 
-        intxs.append(intx)
-        idxs.append(cell_idx)
-        xA[ax] = intx #  m[cell_idx, ax]
-        # Occasionally due to rounding error we do not reach the upper limit
-        # but we should then be extremely close. If that is the case then we've
-        # remained in the same cell and have to manually break the loop.
-        if cell_idx == prev_cell_idx:
-            # make the upper boundary the true upper limit
-            print('Warning: Encountered repeat cell.')
-            intxs[-1] = up_lim
+
+cdef tuple _lower_bounds(DTYPE_t xA, int i,
+        np.ndarray[DTYPE_t, ndim=2] v, int k,
+        np.ndarray[DTYPE_t, ndim=1] d2, DTYPE_t li):
+
+    cdef list lower_bounds = []
+    cdef list lower_idxs = []
+    cdef DTYPE_t xj, dx, x
+    cdef int lower_bound_idx, j
+
+    while True:
+        lower_bound_idx = -1 # mark so we know if we never find one
+
+        # xj is next possible boundary position.
+        # Shrink in from the lower boundary as points qualify
+        xj = li
+
+        for j in range(v.shape[0]): # iterate over models
+            dx = v[k, i] - v[j, i]
+
+            if j == k or dx == 0.0: # avoid division by zero
+                continue
+
+            # calculate the position along the axis
+            x = 0.5 * (v[k, i] - v[j, i] - (d2[k] - d2[j]) / dx)
+
+            if x >= xj and x <= xA:
+                # good boundary position, move to it
+                xj = x
+                lower_bound_idx = j
+
+        if lower_bound_idx == -1 or xj <= li:
             break
 
-    idxs.pop()
-    return intxs, idxs
+        if len(lower_idxs) > d2.shape[0]:
+            print("Runaway conditional in _lower_bounds")
+            exit()
+
+        lower_bounds.append(xj)
+        lower_idxs.append(lower_bound_idx)
+        k = lower_bound_idx
+        xA = xj # move the current position to the last boundary
+
+    lower_bounds.reverse()
+    lower_idxs.reverse()
+
+    return lower_bounds, lower_idxs
 
 
-def _walk(n, m, start_idx, logP, lup, walk_num, seed):
+cdef tuple _upper_bounds(DTYPE_t xA, int i,
+        np.ndarray[DTYPE_t, ndim=2] v, int k,
+        np.ndarray[DTYPE_t, ndim=1] d2, DTYPE_t ui):
+
+    cdef list upper_bounds = []
+    cdef list upper_idxs = [k] # Include the starting central index k.
+                               # Only do this for the upper bounds.
+    cdef DTYPE_t xl, dx, x
+    cdef int upper_bound_idx, j
+
+    while True:
+        upper_bound_idx = -1 # mark so we know if we never find one
+
+        # xl is next possible boundary position.
+        # Shrink in from the upper boundary as points qualify
+        xl = ui
+
+        for j in range(v.shape[0]): # iterate over models
+            dx = v[k, i] - v[j, i]
+
+            if j == k or dx == 0.0: # avoid division by zero
+                continue
+
+            # calculate the position along the axis
+            x = 0.5 * (v[k, i] - v[j, i] - (d2[k] - d2[j]) / dx)
+
+            if x <= xl and x >= xA:
+                # good boundary position, move to it
+                xl = x
+                upper_bound_idx = j
+
+        if upper_bound_idx == -1 or xl >= ui:
+            break
+
+        if len(upper_idxs) > d2.shape[0]:
+            raise Exception("Runaway conditional in _upper_bounds")
+
+        upper_bounds.append(xl)
+        upper_idxs.append(upper_bound_idx)
+        k = upper_bound_idx
+        xA = xl # move the current position to the last boundary
+
+    upper_bounds.append(ui)
+    return upper_bounds, upper_idxs
+
+
+cdef tuple _conditional_bounds(DTYPE_t xA, int i,
+        np.ndarray[DTYPE_t, ndim=2] v, int k, np.ndarray[DTYPE_t, ndim=1] d2,
+        DTYPE_t low_lim, DTYPE_t up_lim):
+    """Calculate the conditional probability distribution along the axis.
+
+    See Sambridge 1999a, p. 7-8.
+
+    We begin at the starting point xA on the current axis ax.
+    We calculate the lower and upper bound of the current cell along the axis.
+    """
+    cdef list lower_bounds
+    cdef list upper_bounds
+    cdef list lower_idxs
+    cdef list upper_idxs
+
+    # calculate the lower bounds and cell indices
+    lower_bounds, lower_idxs = _lower_bounds(xA, i, v, k, d2, low_lim)
+
+    # calculate the upper bounds and cell indices
+    upper_bounds, upper_idxs = _upper_bounds(xA, i, v, k, d2, up_lim)
+
+    # combine the upper and lower lists for bounds and indices, respectively
+    cdef list bounds = lower_bounds + upper_bounds
+    cdef list idxs = lower_idxs + upper_idxs
+
+    return bounds, idxs
+
+
+cdef inline np.ndarray[DTYPE_t, ndim=1] sse2d(
+        np.ndarray[DTYPE_t, ndim=2] A,
+        np.ndarray[DTYPE_t, ndim=1] b):
+    #assert(A.shape[1] == b.shape[0])
+    cdef np.ndarray[DTYPE_t, ndim=1] res = np.empty(A.shape[0], dtype=DTYPE)
+    cdef int j, i
+    cdef DTYPE_t tmp
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
+            tmp = A[i, j] - b[j]
+            res[i] += tmp * tmp
+    return res
+
+
+cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
+        int n, np.ndarray[DTYPE_t, ndim=2] m, int start_idx,
+        np.ndarray[DTYPE_t, ndim=1] logP, tuple lup,
+        int walk_num, int seed):
     """ Produces models in a random walk over the initial ensemble.
 
     Models should have a sampling density that approximates the model space
@@ -82,45 +176,41 @@ def _walk(n, m, start_idx, logP, lup, walk_num, seed):
     """
     # Each walk should have an independent random state so we do not overlap
     # in the numbers generated in each walk.
-
+    cdef int walk_seed
     if seed is not None:
         walk_seed = seed * (walk_num + 1)
     else:
         walk_seed = None
 
-    random_state = np.random.RandomState(walk_seed)
+    cdef object random_state = np.random.RandomState(walk_seed)
 
     # Number of models in the ensemble
-    Ne = m.shape[0]
+    cdef int Ne = m.shape[0]
     # Number of dimensions in the model space
-    d = m.shape[1]
+    cdef int d = m.shape[1]
+    cdef np.ndarray[DTYPE_t, ndim=1] low, up, xp, d2
+    cdef DTYPE_t logPmax, dev, intersection, logPxp, r
 
     low, up = lup
+    cdef np.ndarray[DTYPE_t, ndim=2] resampled_models = (
+            np.zeros((n, d), dtype=DTYPE))
 
-    resampled_models = np.empty((n, d))
     # don't dare overwrite our ensemble data, copy our walk position
-    xp = m[start_idx].copy()
-    d2_prev_ax = np.zeros(Ne)
-    d2 = np.sum((m - xp) ** 2, axis=1)
-    #print "d2=", d2
-    cell_idx = np.argmin(d2)
-    # for each sample we take along our walk
+    xp = m[start_idx].copy() # our current position in the walk
+    d2 = sse2d(m, xp)
+    cdef int i, j, ii, ax, prev_ax, cell_idx = argmin(d2)
+    cdef bint accepted
     for i in range(n):
-     #   print i
-        # first, randomly select order of the axes to walk
-        axes = random_state.permutation(d)
-        for ax in axes:
+        for ax in range(d):
             # keep track of squared perpendicular distances to axis
-            m_thisax = m[:,ax]
-#            print "m_thisax=", m_thisax
-            xp_thisax = xp[ax]
- #           print "xp_thisax=", xp_thisax
-            d2_this_ax = (m_thisax - xp_thisax) ** 2
-#            print "d2_prev_ax=", d2_prev_ax
-#            print "d2_this_ax=", d2_this_ax
-            d2 += d2_prev_ax - d2_this_ax
-            ints, idxs = _calc_conditional(xp, ax, m, d2, low[ax], up[ax])
-            # Calculate the conditional ppd along this axis
+            if i != 0:
+                for j in range(Ne):
+                    d2[j] += (m[j,prev_ax] - dev)**2 - (m[j,ax] - xp[ax]) ** 2
+
+            ints, idxs = _conditional_bounds(xp[ax], ax, m, start_idx, d2,
+                    low[ax], up[ax])
+
+            # Calculate the conditional ppd along this axix
             logPmax = np.max(logP[idxs])
 
             accepted = False
@@ -132,16 +222,17 @@ def _walk(n, m, start_idx, logP, lup, walk_num, seed):
                     if dev < intersection:
                         cell_idx = idxs[ii]
                         break
+
                 # get that cell's log relative probability and max along axis
                 logPxp = logP[cell_idx]
                 # generate another deviate between 0 and 1
                 r = random_state.uniform()
                 accepted = log(r) <= (logPxp - logPmax)
+
             # we accepted a model, this is our new position in the walk
             xp[ax] = dev
-            d2_prev_ax = d2_this_ax
-        resampled_models[i][:] = xp.copy()
+            prev_ax = ax
+
+        resampled_models[i,:] = xp
 
     return resampled_models
-
-

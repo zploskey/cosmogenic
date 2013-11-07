@@ -16,14 +16,14 @@ def get_exts():
     if is_source_pkg():
         exts = []
         for mod_path in paths:
-            mod = os.path.join("cosmogenic", 
+            mod = os.path.join("cosmogenic",
                 mod_path.split(os.sep)[-1].split(".")[0])
-            exts.append(Extension(mod, [mod_path])) 
+            exts.append(Extension(mod, [mod_path]), libraries=["libc"])
     else:
         from Cython.Build import cythonize
         parallel_builds = int(1.5 * multiprocessing.cpu_count())
         exts = cythonize("cosmogenic/*.pyx", nthreads=parallel_builds)
-    return exts 
+    return exts
 
 setup(
     name = "cosmogenic",
@@ -50,4 +50,4 @@ setup(
         "joblib",
         ],
     ext_modules = get_exts(),
-) 
+)
