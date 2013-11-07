@@ -7,9 +7,11 @@ import os
 from setuptools import setup
 from setuptools.extension import Extension
 
+
 def is_source_pkg():
     cwd = os.path.abspath(os.path.dirname(__file__))
     return os.path.exists(os.path.join(cwd, "PKG-INFO"))
+
 
 def get_exts():
     paths = glob.glob("cosmogenic/*.pyx")
@@ -25,16 +27,17 @@ def get_exts():
         exts = cythonize("cosmogenic/*.pyx", nthreads=parallel_builds)
     return exts
 
+
 setup(
-    name = "cosmogenic",
-    packages = ["cosmogenic"],
-    version = "0.1.0",
-    description = "Library for modeling cosmogenic nuclides",
-    author = "Zach Ploskey",
-    author_email = "zploskey@gmail.com",
-    url = "http://github.com/cosmogenic/cosmogenic",
-    keywords = ["cosmic rays", "geomorphology", "modeling"],
-    classifiers = [
+    name="cosmogenic",
+    packages=["cosmogenic"],
+    version="0.1.0",
+    description="Library for modeling cosmogenic nuclides",
+    author="Zach Ploskey",
+    author_email="zploskey@gmail.com",
+    url="http://github.com/cosmogenic/cosmogenic",
+    keywords=["cosmic rays", "geomorphology", "modeling"],
+    classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Development Status :: 4 - Beta",
@@ -49,5 +52,5 @@ setup(
         "numexpr (>=2.0)",
         "joblib",
         ],
-    ext_modules = get_exts(),
+    ext_modules=get_exts(),
 )
