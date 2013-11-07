@@ -210,7 +210,7 @@ cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
             ints, idxs = _conditional_bounds(xp[ax], ax, m, start_idx, d2,
                     low[ax], up[ax])
 
-            # Calculate the conditional ppd along this axix
+            # Calculate the conditional ppd along this axis
             logPmax = np.max(logP[idxs])
 
             accepted = False
