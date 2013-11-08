@@ -14,14 +14,12 @@ cimport cython
 DTYPE = float
 ctypedef cython.floating DTYPE_t
 
-
+@cython.profile(False)
 cdef inline int argmin(np.ndarray[DTYPE_t, ndim=1] a):
-    cdef DTYPE_t amin = a[0]
     cdef int i, lowi = 0
     for i in range(a.shape[0]):
-        if a[i] < amin:
+        if a[i] < a[lowi]:
             lowi = i
-            amin = a[i]
 
     return lowi
 
@@ -56,12 +54,8 @@ cdef tuple _lower_bounds(DTYPE_t xA, int i,
                 xj = x
                 lower_bound_idx = j
 
-        if lower_bound_idx == -1 or xj <= li:
+        if lower_bound_idx == -1:
             break
-
-        if len(lower_idxs) > d2.shape[0]:
-            print("Runaway conditional in _lower_bounds")
-            exit()
 
         lower_bounds.append(xj)
         lower_idxs.append(lower_bound_idx)
@@ -105,11 +99,8 @@ cdef tuple _upper_bounds(DTYPE_t xA, int i,
                 xl = x
                 upper_bound_idx = j
 
-        if upper_bound_idx == -1 or xl >= ui:
+        if upper_bound_idx == -1:
             break
-
-        if len(upper_idxs) > d2.shape[0]:
-            raise Exception("Runaway conditional in _upper_bounds")
 
         upper_bounds.append(xl)
         upper_idxs.append(upper_bound_idx)
@@ -147,7 +138,7 @@ cdef tuple _conditional_bounds(DTYPE_t xA, int i,
 
     return bounds, idxs
 
-
+@cython.profile(False)
 cdef inline np.ndarray[DTYPE_t, ndim=1] sse2d(
         np.ndarray[DTYPE_t, ndim=2] A,
         np.ndarray[DTYPE_t, ndim=1] b):
@@ -165,24 +156,15 @@ cdef inline np.ndarray[DTYPE_t, ndim=1] sse2d(
 cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
         int n, np.ndarray[DTYPE_t, ndim=2] m, int start_idx,
         np.ndarray[DTYPE_t, ndim=1] logP, tuple lup,
-        int walk_num, int seed):
+        int walk_num, seed):
     """ Produces models in a random walk over the initial ensemble.
 
     Models should have a sampling density that approximates the model space
-    posterior probability distribution (PPD). Random numbers generated in
-    the process of producing models are use an independently seeded
-    RandomState object making it safe to use in parallel computations, at
-    least for relatively few processes and short models runs.
+    posterior probability distribution (PPD).
     """
     # Each walk should have an independent random state so we do not overlap
     # in the numbers generated in each walk.
-    cdef int walk_seed
-    if seed is not None:
-        walk_seed = seed * (walk_num + 1)
-    else:
-        walk_seed = None
-
-    cdef object random_state = np.random.RandomState(walk_seed)
+    rng = np.random.RandomState(seed * (walk_num + 2))
 
     # Number of models in the ensemble
     cdef int Ne = m.shape[0]
@@ -190,22 +172,22 @@ cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
     cdef int d = m.shape[1]
     cdef np.ndarray[DTYPE_t, ndim=1] low, up, xp, d2
     cdef DTYPE_t logPmax, dev, intersection, logPxp, r
-
+    dev = 0.0
     low, up = lup
     cdef np.ndarray[DTYPE_t, ndim=2] resampled_models = (
-            np.zeros((n, d), dtype=DTYPE))
+            np.empty((n, d), dtype=m.dtype))
 
     # don't dare overwrite our ensemble data, copy our walk position
     xp = m[start_idx].copy() # our current position in the walk
     d2 = sse2d(m, xp)
-    cdef int i, j, ii, ax, prev_ax, cell_idx = argmin(d2)
+    cdef int i, j, ii, ax, prev_ax = 0, cell_idx = argmin(d2)
     cdef bint accepted
     for i in range(n):
         for ax in range(d):
             # keep track of squared perpendicular distances to axis
             if i != 0:
                 for j in range(Ne):
-                    d2[j] += (m[j,prev_ax] - dev)**2 - (m[j,ax] - xp[ax]) ** 2
+                    d2[j] += (m[j,prev_ax] - dev)**2 - (m[j,ax] - xp[ax])**2
 
             ints, idxs = _conditional_bounds(xp[ax], ax, m, start_idx, d2,
                     low[ax], up[ax])
@@ -216,17 +198,18 @@ cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
             accepted = False
             while not accepted:
                 # generate proposed random deviate along this axis
-                dev = random_state.uniform(low[ax], up[ax])
+                dev = rng.uniform(low[ax], up[ax])
                 # determine voronoi cell index the deviate falls into
-                for ii, intersection in enumerate(ints):
-                    if dev < intersection:
+                n_ints = len(ints)
+                for ii in range(n_ints):
+                    if dev < ints[ii]:
                         cell_idx = idxs[ii]
                         break
 
                 # get that cell's log relative probability and max along axis
                 logPxp = logP[cell_idx]
-                # generate another deviate between 0 and 1
-                r = random_state.uniform()
+                # generate another random deviate between 0 and 1
+                r = rng.uniform()
                 accepted = log(r) <= (logPxp - logPmax)
 
             # we accepted a model, this is our new position in the walk

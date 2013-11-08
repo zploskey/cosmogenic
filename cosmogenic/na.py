@@ -52,6 +52,11 @@ class NASampler(object):
         function should be defined within the dict.
         """
         if config is not None:
+            if 'seed' in config:
+                self.seed = config['seed']
+            else:
+                self.seed = None
+            self.rng = np.random.RandomState(self.seed)
             # save this for later
             self.config = config
             self.d = config['d']
@@ -68,11 +73,9 @@ class NASampler(object):
             else:
                 self.n_initial = self.ns
 
-            if 'seed' in config:
-                self.seed = config['seed']
-            else:
-                self.seed = None
         else:
+            self.rng = np.random.RandomState(seed)
+            self.seed = seed
             self.d = d  # model length
             self.description = description
             self.lo_lim = np.atleast_1d(lo_lim)
@@ -84,7 +87,6 @@ class NASampler(object):
                 self.n_initial = self.ns
             else:
                 self.n_initial = n_initial
-            self.seed = seed
 
         assert self.hi_lim.shape == self.lo_lim.shape, \
             'Limits must have the same shape.'
@@ -99,9 +101,6 @@ class NASampler(object):
         self.np = 0  # number of previous models
         self.lo_lim_nondim = 0.0
         self.hi_lim_nondim = 1.0
-
-        if self.seed is not None:
-            np.random.seed(self.seed)
 
     def dimensionalize(self, x):
         return self.lo_lim + (self.hi_lim - self.lo_lim) * x
@@ -219,7 +218,7 @@ class NASampler(object):
         if n is None:
             n = self.ns
 
-        return np.random.random_sample((n, self.d))
+        return self.rng.random_sample((n, self.d))
 
     def select_new_models(self, ns=None):
         """ Returns a 2D ndarray where each row is newly selected model.
@@ -249,7 +248,7 @@ class NASampler(object):
                 # Current random walk location, start at voronoi cell node vk
                 xA = vk.copy()
                 # Iterate through axes in random order, doing a random walk
-                component = np.random.permutation(self.d)
+                component = self.rng.permutation(self.d)
                 for idx, i in enumerate(component):
                     # keep track of squared perpendicular distances to axis
                     d2_this_ax = (m[:, i] - xA[i]) ** 2
@@ -264,7 +263,7 @@ class NASampler(object):
                     ui = np.nanmin(
                         np.hstack((self.hi_lim_nondim, x[x >= xA[i]])))
                     # Randomly sample the interval and move there
-                    xA[i] = (ui - li) * np.random.random_sample() + li
+                    xA[i] = (ui - li) * self.rng.random_sample() + li
                     d2_prev_ax = d2_this_ax
 
                 new_models[sample_idx] = xA.copy()
@@ -303,6 +302,11 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         config: optional, can be only argument and defines all the above params
     """
     if config is not None:
+        if "seed" in config:
+            seed = config["seed"]
+        else:
+            seed = None
+        
         if "datadir" in config:
             path = os.path.abspath(config["datadir"])
         else:
@@ -317,11 +321,6 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
 
         if ipy_profile in config:
             ipy_profile = config['ipy_profile']
-
-        if "seed" in config:
-            seed = config["seed"]
-        else:
-            seed = None
 
     if ipy_profile is not None:
         v = _setup_engines(ipy_profile)
@@ -348,13 +347,14 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
     start_time = time.time()
     logger.info('Start time: %s' % time.asctime(time.localtime(start_time)))
     logger.info('Generating list of random walks to perform...')
-    walk_params = [(pts_per_walk, m, wi, logP, lup, i, seed)
-                 for i, wi in enumerate(walkstart_idxs)]
+    walk_params = ((pts_per_walk, m, wi, logP, lup, i, seed)
+                 for i, wi in enumerate(walkstart_idxs))
 
     if SINGLE_PROCESS_DEBUG or ipy_profile is None:
         # in debug mode we resample in a single process
         logger.info('Importance resampling with sequential random walks.')
-        res = list(map(walk_wrapper, walk_params))
+        #res = list(map(na_resample._walk, *walk_params))
+        res = (na_resample._walk(*w) for w in walk_params)
     else:  # run in parallel
         logger.info('Importance resampling with parallel random walks.')
         asr = v.map(walk_wrapper, walk_params)
@@ -363,15 +363,12 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
 
     logger.info('Finished importance sampling at %s' % time.asctime())
 
-    if len(res) != Nw:
-        warnings.warn('One of the random walks appears to have failed.')
-
     logger.info('Recombining samples from each walk...')
-    mr = np.zeros((Nw * pts_per_walk, d), dtype=np.float64)
+    mr = np.zeros((Nw * pts_per_walk, d), dtype=m.dtype)
 
     n = pts_per_walk
     for i in range(Nw):
-        mr[i * n:(i + 1) * n, :] = res[i]
+        mr[i * n:(i + 1) * n, :] = res.next()
 
     logger.info("Storing resampling data...")
 
@@ -389,11 +386,6 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
                % (tH, tm, ts))
 
     return mr
-
-
-def walk_wrapper(w):
-    """ Wrapper function for paralle call to the _walk function. """
-    return na_resample._walk(w[0], w[1], w[2], w[3], w[4], w[5], w[6])
 
 
 def _setup_engines(profile):
