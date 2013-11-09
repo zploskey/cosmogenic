@@ -164,7 +164,7 @@ cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
     """
     # Each walk should have an independent random state so we do not overlap
     # in the numbers generated in each walk.
-    rng = np.random.RandomState(seed * (walk_num + 2))
+    rng = np.random.RandomState(seed) #* (walk_num + 2) * (start_idx + 1))
 
     # Number of models in the ensemble
     cdef int Ne = m.shape[0]
@@ -175,7 +175,7 @@ cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
     dev = 0.0
     low, up = lup
     cdef np.ndarray[DTYPE_t, ndim=2] resampled_models = (
-            np.empty((n, d), dtype=m.dtype))
+            np.zeros((n, d), dtype=m.dtype))
 
     # don't dare overwrite our ensemble data, copy our walk position
     xp = m[start_idx].copy() # our current position in the walk
@@ -185,16 +185,16 @@ cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
     for i in range(n):
         for ax in range(d):
             # keep track of squared perpendicular distances to axis
-            if i != 0:
-                for j in range(Ne):
-                    d2[j] += (m[j,prev_ax] - dev)**2 - (m[j,ax] - xp[ax])**2
+            for j in range(Ne):
+                d2[j] += ((m[j,prev_ax] - dev)**2 if i != 0 else 0.0
+                        ) - (m[j,ax] - xp[ax])**2
 
             ints, idxs = _conditional_bounds(xp[ax], ax, m, start_idx, d2,
                     low[ax], up[ax])
 
             # Calculate the conditional ppd along this axis
             logPmax = np.max(logP[idxs])
-
+            
             accepted = False
             while not accepted:
                 # generate proposed random deviate along this axis

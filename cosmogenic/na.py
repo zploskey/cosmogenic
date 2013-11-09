@@ -338,7 +338,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         del tmp
     else:
         lup = (lo_lim, hi_lim)
-
+   
     walkstart_idxs = np.argsort(x2v)[0:Nw]
 
     # Log model probabilities, ignoring k constant (Sambridge 1999b eq. 29)
@@ -346,29 +346,27 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
 
     start_time = time.time()
     logger.info('Start time: %s' % time.asctime(time.localtime(start_time)))
-    logger.info('Generating list of random walks to perform...')
-    walk_params = ((pts_per_walk, m, wi, logP, lup, i, seed)
-                 for i, wi in enumerate(walkstart_idxs))
+    
+    n = pts_per_walk
+    mr = np.zeros((Nw * n, d), dtype=m.dtype)
 
     if SINGLE_PROCESS_DEBUG or ipy_profile is None:
         # in debug mode we resample in a single process
         logger.info('Importance resampling with sequential random walks.')
-        #res = list(map(na_resample._walk, *walk_params))
-        res = (na_resample._walk(*w) for w in walk_params)
+        for i in range(Nw):
+            mr[i * n:(i + 1) * n, :] = na_resample._walk(n, m,
+                    walkstart_idxs[i], logP, lup, i, seed)
     else:  # run in parallel
+        walk_params = ((n, m, wi, logP, lup, i, seed)
+                 for i, wi in enumerate(walkstart_idxs))
         logger.info('Importance resampling with parallel random walks.')
-        asr = v.map(walk_wrapper, walk_params)
+        asr = v.map(lambda x: na_resample._walk(*x), walk_params)
         asr.wait_interactive()
         res = asr.result
+        for i in range(Nw):
+            mr[i * n:(i + 1) * n, :] = res[i]
 
     logger.info('Finished importance sampling at %s' % time.asctime())
-
-    logger.info('Recombining samples from each walk...')
-    mr = np.zeros((Nw * pts_per_walk, d), dtype=m.dtype)
-
-    n = pts_per_walk
-    for i in range(Nw):
-        mr[i * n:(i + 1) * n, :] = res.next()
 
     logger.info("Storing resampling data...")
 
