@@ -15,7 +15,7 @@ def unpickle(filename):
     Unpickle and return the contents of a file at filename.
     """
     path = os.path.abspath(filename)
-    with open(path, 'r') as fd:
+    with open(path, 'rb') as fd:
         payload = pkl.load(fd)
     return payload
 

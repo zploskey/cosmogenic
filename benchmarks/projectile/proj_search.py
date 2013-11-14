@@ -17,15 +17,15 @@ def positions(m, ts):
 
 conf = {
     "description": "Test of NA on measurements of a projectile location",
-    "ns": 20,
-    "nr": 3,
+    "ns": 10,
+    "nr": 2,
 #    "n_initial": 500,
     "lo_lim": np.array([-50, 0, -100, 0], dtype=float),
     "hi_lim": np.array([50, 200, 100, 200], dtype=float),
     "d": 4,
-    "ne": 1000,
+    "ne": 250,
     "shape": (4, 1),
-    "m_true": np.array([0.0, 100.0, 0.0, 100.0], dtype=float),
+    "m_true": np.array([20.0, 100.0, 0.0, 100.0], dtype=float),
     # resampling
     'Nw': 24,
     'pts_per_walk': 100,

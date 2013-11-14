@@ -1,3 +1,5 @@
+# cython: profile=True
+# cython: cdivision=True
 """
 Implementation of the Neighborhood Search Algorithm and Bayesian resampling
 
@@ -6,6 +8,7 @@ Author: Zach Ploskey (zploskey@uw.edu), University of Washington
 Implementation of the Neighborhood Algorithm after Sambridge (1999a,b)
 in Geophys. J. Int.
 """
+
 from __future__ import division, print_function
 
 import datetime
@@ -14,20 +17,25 @@ import os
 import time
 import warnings
 
+from cpython cimport array
+from libc.math cimport log
+
 import numpy as np
+cimport numpy as np
+cimport cython
 import pylab
 
 from IPython.parallel import Client
-from IPython.parallel.error import NoEnginesRegistered
 
 from cosmogenic import util
-from cosmogenic import na_resample
+
+DTYPE = np.double
+cdef FLOATING_ARRAY = array.array('d')
+cdef INT_ARRAY = array.array('i')
+ctypedef np.double_t DTYPE_t
 
 logger = logging.getLogger(__name__)
 SINGLE_PROCESS_DEBUG = False
-
-MAX_IPCLUSTER_SPINUP_TIME = 10.0  # seconds
-SLEEP_TIME = 0.1  # seconds
 
 class NASampler(object):
     """ Samples a parameter space using the Neighborhood Algorithm."""
@@ -98,7 +106,7 @@ class NASampler(object):
         self.fn = fn  # function to minimize
         self.chosen_misfits = np.ones(self.nr) * np.inf
         self.lowest_idxs = -1 * np.ones(self.nr, dtype=int)
-        self.np = 0  # number of previous models
+        self.np = 0   # number of previous models
         self.lo_lim_nondim = 0.0
         self.hi_lim_nondim = 1.0
 
@@ -167,7 +175,7 @@ class NASampler(object):
                     % time.asctime(time.localtime(start_time)))
 
         max_chosen = max(self.chosen_misfits)
-        it = 1  # iteration number
+        it = 1   # iteration number
         idx = 0  # last used index
         ns = self.n_initial
         self.m[0:ns, :] = self.generate_random_models(ns)
@@ -280,6 +288,283 @@ def search(fn, config):
     return (sampler.mdim, sampler.misfit)
 
 
+@cython.profile(False)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline int argmin(DTYPE_t[:] a) nogil:
+    cdef int i
+    cdef int lowi = 0
+    for i in range(a.shape[0]):
+        if a[i] < a[lowi]:
+            lowi = i
+
+    return lowi
+
+@cython.profile(False)
+cdef inline append_buffer(array.array arr, cython.numeric item):
+    cdef cython.numeric* data = [item] 
+    cdef Py_ssize_t length = 1
+    return array.extend_buffer(arr, <char*>data, length)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+cdef tuple _lower_bounds(DTYPE_t xA, int i,
+        DTYPE_t[:, :] v, int k,
+        DTYPE_t[:] d2, DTYPE_t li):
+
+    cdef array.array lower_bounds = array.copy(FLOATING_ARRAY)
+    cdef array.array lower_idxs = array.copy(INT_ARRAY)
+    cdef DTYPE_t xj, dx, x
+    cdef int lower_bound_idx, j
+    cdef Py_ssize_t Ne = v.shape[0]
+
+    while True:
+        lower_bound_idx = -1 # mark so we know if we never find one
+
+        # xj is next possible boundary position.
+        # Shrink in from the lower boundary as points qualify
+        xj = li
+
+        for j in range(v.shape[0]): # iterate over models
+            dx = v[k, i] - v[j, i]
+
+            if j == k or dx == 0.0: # avoid division by zero
+                continue
+
+            # calculate the position along the axis
+            x = 0.5 * (v[k, i] + v[j, i] - (d2[k] - d2[j]) / dx)
+
+            if x < xA and x > xj:
+                # good boundary position, move to it
+                xj = x
+                lower_bound_idx = j
+
+        if lower_bound_idx == -1:
+            break
+        
+        if len(lower_bounds) > 2 * Ne:
+            print("Runaway conditional in _lower_bounds")
+            print("bounds=", lower_bounds)
+            print("idxs=", lower_idxs)
+            import sys; sys.exit()
+
+        append_buffer(lower_bounds, xj)
+        append_buffer(lower_idxs, lower_bound_idx)
+        k = lower_bound_idx
+        xA = xj # move the current position to the last boundary
+
+    lower_bounds.reverse()
+    lower_idxs.reverse()
+
+    return lower_bounds, lower_idxs
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+cdef tuple _upper_bounds(DTYPE_t xA, int i,
+        DTYPE_t[:, :] v, int k,
+        DTYPE_t[:] d2, DTYPE_t ui):
+
+    cdef array.array upper_bounds = array.copy(FLOATING_ARRAY)
+    cdef array.array upper_idxs = array.copy(INT_ARRAY)
+    cdef Py_ssize_t Ne = v.shape[0]
+    
+    # For upper bounds only, include the starting central index k.
+    append_buffer(upper_idxs, k)
+    #upper_idxs.append(k)
+
+    cdef DTYPE_t xl, dx, x
+    cdef int upper_bound_idx, j
+
+    while True:
+        upper_bound_idx = -1 # mark so we know if we never find one
+
+        # xl is next possible boundary position.
+        # Shrink in from the upper boundary as points qualify
+        xl = ui
+
+        for j in range(v.shape[0]): # iterate over models
+            dx = v[k, i] - v[j, i]
+
+            if j == k or dx == 0.0: # avoid division by zero
+                continue
+
+            # calculate the position along the axis
+            x = 0.5 * (v[k, i] + v[j, i] - (d2[k] - d2[j]) / dx)
+
+            if x > xA and x < xl:
+                # good boundary position, move to it
+                xl = x
+                upper_bound_idx = j
+
+        if upper_bound_idx == -1:
+            break
+        
+        if len(upper_bounds) > 2 * Ne:
+            print("Runaway conditional in _upper_bounds")
+            print("bounds=", upper_bounds)
+            print("idxs=", upper_idxs)
+            import sys; sys.exit()
+
+        #upper_bounds.append(xl)
+        append_buffer(upper_bounds, xl)
+        #upper_idxs.append(upper_bound_idx)
+        append_buffer(upper_idxs, upper_bound_idx)
+        k = upper_bound_idx
+        xA = xl # move the current position to the last boundary
+
+    #upper_bounds.append(ui)
+    append_buffer(upper_bounds, ui)
+    return upper_bounds, upper_idxs
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+cdef tuple _conditional_bounds(DTYPE_t xA, int i,
+        DTYPE_t[:, :] v, int k, DTYPE_t[:] d2,
+        DTYPE_t low_lim, DTYPE_t up_lim):
+    """Calculate the conditional probability distribution along the axis.
+
+    See Sambridge 1999a, p. 7-8.
+
+    We begin at the starting point xA on the current axis ax.
+    We calculate the lower and upper bound of the current cell along the axis.
+    """
+    cdef array.array bounds, idxs
+
+    # calculate the lower bounds and cell indices
+    cdef tuple lows = _lower_bounds(xA, i, v, k, d2, low_lim)
+    bounds = lows[0]
+    idxs = lows[1]
+
+    # calculate the upper bounds and cell indices
+    cdef tuple ups = _upper_bounds(xA, i, v, k, d2, up_lim)
+    
+    # combine the upper and lower lists for bounds and indices, respectively
+    array.extend(bounds, ups[0])
+    array.extend(idxs, ups[1])
+
+    cdef DTYPE_t[:] bounds_view = bounds
+    cdef int[:] idxs_view = idxs
+
+    return bounds_view, idxs_view
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.profile(False)
+cdef inline DTYPE_t[:] sse2d(DTYPE_t[:, :] A, DTYPE_t[:] b):
+    cdef int j, i
+    cdef DTYPE_t tmp
+    cdef DTYPE_t[:] res = np.empty(A.shape[0], dtype=DTYPE)
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
+            tmp = A[i, j] - b[j]
+            res[i] = tmp * tmp
+    return res
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+cdef np.ndarray[DTYPE_t, ndim=2] _walk(
+        int n,
+        DTYPE_t[:, :] m,
+        int start_idx,
+        np.ndarray[DTYPE_t, ndim=1] logP,
+        tuple lup,
+        int walk_num,
+        int seed):
+    """ Produces models in a random walk over the initial ensemble.
+
+    Models should have a sampling density that approximates the model space
+    posterior probability distribution (PPD).
+    """
+    # Each walk should have an independent random state so we do not overlap
+    # in the numbers generated in each walk.
+    rng = np.random.RandomState(seed * (walk_num + 2) * (start_idx + 1))
+    
+    # capture tuple return values here
+    cdef tuple tup
+    
+    # Number of models in the ensemble
+    cdef int Ne = m.shape[0]
+    # Number of dimensions in the model space
+    cdef int d = m.shape[1]
+    cdef DTYPE_t[:] low, up, xp, d2
+    cdef np.ndarray[DTYPE_t, ndim=2] resampled_models 
+    cdef int i, j, k, ii, ax, prev_ax, cell_idx
+    cdef bint accepted
+    cdef DTYPE_t[:] ints
+    cdef int[:] idxs
+    cdef DTYPE_t logPmax, intersection, logPxp, r, dev
+
+    low = lup[0]
+    up = lup[1]
+    # record our current position in the walk
+    xp = m[start_idx].copy()
+    resampled_models = np.empty((n, d), dtype=DTYPE)
+    prev_ax = 0
+    dev = 0.0
+    d2 = sse2d(m, xp)
+    cell_idx = argmin(d2)
+    for i in range(n):
+        #print("sample", i)
+        for ax in range(d):
+            # keep track of squared perpendicular distances to axis
+            for j in range(Ne):
+                if i != 0:
+                    d2[j] += (m[j, prev_ax] - dev)**2
+                d2[j] -= (m[j, ax] - xp[ax])**2
+
+            tup = _conditional_bounds(xp[ax], ax, m, start_idx, d2,
+                    low[ax], up[ax])
+            ints = tup[0]
+            idxs = tup[1]
+            #print("ints = ", ints)
+            #print("idxs = ", idxs)
+            # Calculate the conditional ppd along this axis
+            logPmax = logP[idxs[0]]
+            for k in range(1, idxs.shape[0]):
+                logP_k = logP[idxs[k]]
+                if logP_k > logPmax:
+                    logPmax = logP_k
+
+            accepted = False
+            while not accepted:
+                # generate proposed random deviate along this axis
+                dev = rng.uniform(low[ax], up[ax])
+                # determine voronoi cell index the deviate falls into
+                for ii in range(ints.shape[0]):
+                    if dev < ints[ii]:
+                        cell_idx = idxs[ii]
+                        break
+
+                # get that cell's log relative probability and max along axis
+                logPxp = logP[cell_idx]
+                # generate another random deviate between 0 and 1
+                r = rng.uniform()
+                accepted = log(r) <= (logPxp - logPmax)
+
+            # we accepted a model, this is our new position in the walk
+            xp[ax] = dev
+            prev_ax = ax
+
+        resampled_models[i, :] = xp
+    
+    print("completed walk", walk_num)
+    return resampled_models
+
+
+cpdef np.ndarray[DTYPE_t, ndim=2] walk_wrapper(tuple w):
+    cdef np.ndarray[DTYPE_t, ndim=2] res =_walk(
+            w[0], w[1], w[2], w[3], w[4], w[5], w[6])
+    return res 
+
+
 def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
              hi_lim=1, config=None, path=None, ipy_profile=None):
     """Resample an ensemble of models.
@@ -354,13 +639,13 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         # in debug mode we resample in a single process
         logger.info('Importance resampling with sequential random walks.')
         for i in range(Nw):
-            mr[i * n:(i + 1) * n, :] = na_resample._walk(n, m,
+            mr[i * n:(i + 1) * n, :] = _walk(n, m,
                     walkstart_idxs[i], logP, lup, i, seed)
     else:  # run in parallel
         walk_params = ((n, m, wi, logP, lup, i, seed)
                  for i, wi in enumerate(walkstart_idxs))
         logger.info('Importance resampling with parallel random walks.')
-        asr = v.map(lambda x: na_resample._walk(*x), walk_params)
+        asr = v.map(walk_wrapper, walk_params)
         asr.wait_interactive()
         res = asr.result
         for i in range(Nw):
@@ -387,28 +672,10 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
 
 
 def _setup_engines(profile):
-    tic = time.time()
-    while True:
-        try:
-            try:
-                client
-            except:
-                client = Client(profile=profile)
-            dv = client[:]
-        except (IOError, NoEnginesRegistered):
-            toc = time.time()
-            elapsed_time = toc - tic
-            assert elapsed_time < MAX_IPCLUSTER_SPINUP_TIME, \
-                "Cluster did not spin up properly in %d.1 seconds.".format(
-                    elapsed_time)
-            time.sleep(SLEEP_TIME)
-        else:
-            break
-
-    dv.execute('from cosmogenic import na_resample', block=True)
-    v = client.load_balanced_view()
-
-    return v
+    client = Client(profile=profile)
+    dv = client[:]
+    dv.execute('from cosmogenic import na', block=True)
+    return client.load_balanced_view()
 
 
 def plot_stats(stats, lo_lim, hi_lim, shape=None, m_true=None,
@@ -681,4 +948,5 @@ def _calc_intersects(xp, ax, m, cell_idx, d2, lup):
     hi_idx = np.argmin(tmp)
     xu = tmp[hi_idx]
     return xl, xu
+
 

@@ -1,31 +1,9 @@
-from __future__ import print_function
 
-import glob
-import multiprocessing
-import os
+import numpy
 
 from setuptools import setup
 from setuptools.extension import Extension
-
-
-def is_source_pkg():
-    cwd = os.path.abspath(os.path.dirname(__file__))
-    return os.path.exists(os.path.join(cwd, "PKG-INFO"))
-
-
-def get_exts():
-    paths = glob.glob("cosmogenic/*.pyx")
-    if is_source_pkg():
-        exts = []
-        for mod_path in paths:
-            mod = os.path.join("cosmogenic",
-                mod_path.split(os.sep)[-1].split(".")[0])
-            exts.append(Extension(mod, [mod_path]), libraries=["libc"])
-    else:
-        from Cython.Build import cythonize
-        parallel_builds = int(1.5 * multiprocessing.cpu_count())
-        exts = cythonize("cosmogenic/*.pyx", nthreads=parallel_builds)
-    return exts
+from Cython.Build import cythonize
 
 
 setup(
@@ -49,8 +27,13 @@ setup(
         "scipy (>=0.11)",
         "matplotlib (>=1.1)",
         "ipython (>=0.14)",
-        "numexpr (>=2.0)",
         "joblib",
         ],
-    ext_modules=get_exts(),
+    ext_modules=cythonize(
+        Extension(
+            "cosmogenic.na",
+            ["cosmogenic/na.pyx"],
+            libraries=["m"],
+            include_dirs=[numpy.get_include()])
+        )
 )
