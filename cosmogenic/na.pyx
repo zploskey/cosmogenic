@@ -24,8 +24,10 @@ import numpy as np
 cimport numpy as np
 cimport cython
 import pylab
+cimport cyrandom
 
 from IPython.parallel import Client
+from numpy cimport uint64_t
 
 from cosmogenic import util
 
@@ -303,7 +305,7 @@ cdef inline int argmin(DTYPE_t[:] a) nogil:
 @cython.profile(False)
 cdef inline append_buffer(array.array arr, cython.numeric item):
     cdef cython.numeric* data = [item] 
-    cdef Py_ssize_t length = 1
+    cdef int length = 1
     return array.extend_buffer(arr, <char*>data, length)
 
 
@@ -318,7 +320,7 @@ cdef tuple _lower_bounds(DTYPE_t xA, int i,
     cdef array.array lower_idxs = array.copy(INT_ARRAY)
     cdef DTYPE_t xj, dx, x
     cdef int lower_bound_idx, j
-    cdef Py_ssize_t Ne = v.shape[0]
+    cdef int Ne = v.shape[0]
 
     while True:
         lower_bound_idx = -1 # mark so we know if we never find one
@@ -369,7 +371,7 @@ cdef tuple _upper_bounds(DTYPE_t xA, int i,
 
     cdef array.array upper_bounds = array.copy(FLOATING_ARRAY)
     cdef array.array upper_idxs = array.copy(INT_ARRAY)
-    cdef Py_ssize_t Ne = v.shape[0]
+    cdef int Ne = v.shape[0]
     
     # For upper bounds only, include the starting central index k.
     append_buffer(upper_idxs, k)
@@ -470,6 +472,26 @@ cdef inline DTYPE_t[:] sse2d(DTYPE_t[:, :] A, DTYPE_t[:] b):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
+@cython.profile(False)
+cpdef inline int binary_bin_search(DTYPE_t[:] A, DTYPE_t key) nogil:
+    cdef int imin = 0
+    cdef int imax = A.shape[0] - 1
+    cdef int imid
+
+    while imin < imax:
+        imid = (imin + imax) // 2
+        
+        if A[imid] < key:
+            imin = imid + 1
+        else:
+            imax = imid
+    
+    return imin
+    
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
 cdef np.ndarray[DTYPE_t, ndim=2] _walk(
         int n,
         DTYPE_t[:, :] m,
@@ -485,7 +507,9 @@ cdef np.ndarray[DTYPE_t, ndim=2] _walk(
     """
     # Each walk should have an independent random state so we do not overlap
     # in the numbers generated in each walk.
-    rng = np.random.RandomState(seed * (walk_num + 2) * (start_idx + 1))
+    cdef uint64_t walk_seed = seed * (<uint64_t>walk_num + 2) * (
+            <uint64_t>start_idx + 1)
+    cdef cyrandom.Random rng = cyrandom.Random(walk_seed)
     
     # capture tuple return values here
     cdef tuple tup
@@ -496,11 +520,11 @@ cdef np.ndarray[DTYPE_t, ndim=2] _walk(
     cdef int d = m.shape[1]
     cdef DTYPE_t[:] low, up, xp, d2
     cdef np.ndarray[DTYPE_t, ndim=2] resampled_models 
-    cdef int i, j, k, ii, ax, prev_ax, cell_idx
+    cdef int i, j, k, ibin, ax, prev_ax, cell_idx
     cdef bint accepted
     cdef DTYPE_t[:] ints
     cdef int[:] idxs
-    cdef DTYPE_t logPmax, intersection, logPxp, r, dev
+    cdef DTYPE_t logPmax, logP_k, logPxp, intersection, r, dev
 
     low = lup[0]
     up = lup[1]
@@ -524,8 +548,7 @@ cdef np.ndarray[DTYPE_t, ndim=2] _walk(
                     low[ax], up[ax])
             ints = tup[0]
             idxs = tup[1]
-            #print("ints = ", ints)
-            #print("idxs = ", idxs)
+            
             # Calculate the conditional ppd along this axis
             logPmax = logP[idxs[0]]
             for k in range(1, idxs.shape[0]):
@@ -538,15 +561,12 @@ cdef np.ndarray[DTYPE_t, ndim=2] _walk(
                 # generate proposed random deviate along this axis
                 dev = rng.uniform(low[ax], up[ax])
                 # determine voronoi cell index the deviate falls into
-                for ii in range(ints.shape[0]):
-                    if dev < ints[ii]:
-                        cell_idx = idxs[ii]
-                        break
-
+                ibin = binary_bin_search(ints, dev)
+                cell_idx = idxs[ibin]
                 # get that cell's log relative probability and max along axis
                 logPxp = logP[cell_idx]
                 # generate another random deviate between 0 and 1
-                r = rng.uniform()
+                r = rng.random()
                 accepted = log(r) <= (logPxp - logPmax)
 
             # we accepted a model, this is our new position in the walk
