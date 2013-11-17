@@ -10,7 +10,7 @@ import scipy.misc
 import scipy.integrate
 import scipy.interpolate
 
-import scaling
+from cosmogenic import scaling
 
 SEC_PER_YEAR = 3.15576 * 10 ** 7  # seconds per year
 ALPHA = 0.75  # empirical constant from Heisinger

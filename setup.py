@@ -30,7 +30,6 @@ setup(
         "scipy (>=0.11)",
         "matplotlib (>=1.1)",
         "ipython (>=0.14)",
-        "joblib",
         ],
     ext_modules=cythonize([
         Extension(

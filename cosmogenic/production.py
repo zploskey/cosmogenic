@@ -6,16 +6,16 @@ from __future__ import division, print_function, unicode_literals
 
 import numpy as np
 import numexpr as ne
-import joblib
 
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import dfitpack
 
 from cosmogenic import muon
-from cosmogenic  import scaling as scal
+from cosmogenic import scaling
 
 LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
 LAMBDA_fast = 4320.0 # after Heisinger 2002
+
 
 def P_sp(z, n, scaling=None, alt=0, lat=75):
     """
@@ -38,6 +38,7 @@ def P_sp(z, n, scaling=None, alt=0, lat=75):
     
     return f_scaling * n.P0 * np.exp(-z / LAMBDA_h)
 
+
 def P_tot(z, alt, lat, n, scaling=None):
     """
     Total production rate of nuclide n in atoms / g of material / year
@@ -48,6 +49,7 @@ def P_tot(z, alt, lat, n, scaling=None):
     n: nuclide object
     """
     return P_sp(z, n, scaling, alt, lat) + muon.P_mu_total(z, alt, n)
+
 
 def interpolate_P_tot(max_depth, npts, alt, lat, n, scaling='stone'):
     """
@@ -91,7 +93,8 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         """
         
         if (x == None) or (y == None) and (filename != None):
-            self._data = joblib.load(filename)
+            with open(filename, "br") as fd:
+                self._data = pickle.load(fd)
         else:
             self._data = dfitpack.fpcurf0(x,y,k,w=w,
                                       xb=bbox[0],xe=bbox[1],s=0)
@@ -114,8 +117,10 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         It is probably safest to create a new interpolation for a new scipy
         version.
         """
-        joblib.dump(self._data, filename)
-    
+        with open(filename, "bw") as fd:
+            pickle.dump(self._data, fd)
+
+
 def load_interpolation(name):
     """
     Load a spline interpolation from disk.
@@ -123,7 +128,8 @@ def load_interpolation(name):
     name: (string) name of file to load from
     """
     return ProductionSpline(filename=name)
-    
+
+
 def save_interpolation(name, spline):
     """
     Save a spline interpolation to disk.

@@ -3,8 +3,6 @@
 """
 Implementation of the Neighborhood Search Algorithm and Bayesian resampling
 
-Author: Zach Ploskey (zploskey@uw.edu), University of Washington
-
 Implementation of the Neighborhood Algorithm after Sambridge (1999a,b)
 in Geophys. J. Int.
 """
@@ -302,6 +300,7 @@ cdef inline int argmin(DTYPE_t[:] a) nogil:
 
     return lowi
 
+
 @cython.profile(False)
 cdef inline append_buffer(array.array arr, cython.numeric item):
     cdef cython.numeric* data = [item] 
@@ -346,12 +345,6 @@ cdef tuple _lower_bounds(DTYPE_t xA, int i,
         if lower_bound_idx == -1:
             break
         
-        if len(lower_bounds) > 2 * Ne:
-            print("Runaway conditional in _lower_bounds")
-            print("bounds=", lower_bounds)
-            print("idxs=", lower_idxs)
-            import sys; sys.exit()
-
         append_buffer(lower_bounds, xj)
         append_buffer(lower_idxs, lower_bound_idx)
         k = lower_bound_idx
@@ -375,7 +368,6 @@ cdef tuple _upper_bounds(DTYPE_t xA, int i,
     
     # For upper bounds only, include the starting central index k.
     append_buffer(upper_idxs, k)
-    #upper_idxs.append(k)
 
     cdef DTYPE_t xl, dx, x
     cdef int upper_bound_idx, j
@@ -404,20 +396,11 @@ cdef tuple _upper_bounds(DTYPE_t xA, int i,
         if upper_bound_idx == -1:
             break
         
-        if len(upper_bounds) > 2 * Ne:
-            print("Runaway conditional in _upper_bounds")
-            print("bounds=", upper_bounds)
-            print("idxs=", upper_idxs)
-            import sys; sys.exit()
-
-        #upper_bounds.append(xl)
         append_buffer(upper_bounds, xl)
-        #upper_idxs.append(upper_bound_idx)
         append_buffer(upper_idxs, upper_bound_idx)
         k = upper_bound_idx
         xA = xl # move the current position to the last boundary
 
-    #upper_bounds.append(ui)
     append_buffer(upper_bounds, ui)
     return upper_bounds, upper_idxs
 
@@ -536,7 +519,6 @@ cdef np.ndarray[DTYPE_t, ndim=2] _walk(
     d2 = sse2d(m, xp)
     cell_idx = argmin(d2)
     for i in range(n):
-        #print("sample", i)
         for ax in range(d):
             # keep track of squared perpendicular distances to axis
             for j in range(Ne):
@@ -624,10 +606,10 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
         lo_lim = np.atleast_1d(config['lo_lim'])
         hi_lim = np.atleast_1d(config['hi_lim'])
 
-        if ipy_profile in config:
-            ipy_profile = config['ipy_profile']
+        if "ipy_profile" in config:
+            ipy_profile = config["ipy_profile"]
 
-    if ipy_profile is not None:
+    if "ipy_profile" in config or ipy_profile is not None:
         v = _setup_engines(ipy_profile)
 
     # Number of dimensions in the model space
@@ -700,20 +682,19 @@ def _setup_engines(profile):
 
 def plot_stats(stats, lo_lim, hi_lim, shape=None, m_true=None,
                labels=None):
-       # stats = {
-             # 'marginals': marginals,
-             # 'bin_edges': bin_edges,
-             # 'C': C,
-             # 'R': R,
-             # 'C_prior': C_prior,
-            # }
     margs = stats['marginals']
     edges = stats['bin_edges']
     d = margs.shape[1]  # number of model dimensions
     m_true = np.atleast_1d(m_true)
-
+    cdef int adj = 0
     if shape is None:
-        shape = (1, d)
+        if d <= 2:
+            shape = (1, d)
+        else:
+            if d % 2 != 0:
+                adj = 1
+            ncol = d // 2
+            shape = (ncol + adj, ncol)
 
     if labels is None:
         labels = [None] * d
@@ -725,7 +706,7 @@ def plot_stats(stats, lo_lim, hi_lim, shape=None, m_true=None,
                       label=labels[i])
 
     pylab.suptitle('1-D Marginals', fontsize=14)
-    pylab.show()
+    pylab.savefig("marginals.eps")
 
 
 def plot_marginal(vals, edges, pos, true_val=None, label=None):
@@ -860,9 +841,6 @@ def calc_stats(mr=None, nbins=100, lo_lim=0.0, hi_lim=1.0, C_prior=None,
             alpha=0.68))
         std[i] = mr[:, i].std()
 
-    # correlation matrix -- Sambridge 1999b eq. 30
-    # corr = C / np.sqrt(np.dot(np.diag(C,  )
-
     stats = {
              'marginals': marginals,
              'mean': mean,
@@ -947,26 +925,3 @@ def dimensionalize(val, lo_lim, hi_lim):
 
 def nondimensionalize(val, lo_lim, hi_lim):
     return (val - lo_lim) / (hi_lim - lo_lim)
-
-
-def _calc_intersects(xp, ax, m, cell_idx, d2, lup):
-    """Finds upper and lower intersection of axis through xp along axis ax.
-
-    Unused, potentially useful for search phase above.
-    """
-    low, up = lup
-    vki = m[cell_idx, ax]
-    vji = m[:, ax]
-    # squared perpendicular distance to the axis from vk
-    dk2 = d2[cell_idx]
-    x = 0.5 * (vki + vji + (dk2 - d2) / (vki - vji))
-    # calculate lower intersection
-    tmp = np.hstack((low[ax], x[x <= xp[ax]]))
-    xl = tmp[np.argmax(tmp)]
-    # calculate upper intersection
-    tmp = np.hstack((up[ax], x[x >= xp[ax]]))
-    hi_idx = np.argmin(tmp)
-    xu = tmp[hi_idx]
-    return xl, xu
-
-
