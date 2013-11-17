@@ -8,13 +8,13 @@ Cosmogenic is still in beta. We welcome contributions.
 Modules
 -------
 
-muon:          production from muons
-production:    spallation and total production rate functions
-scaling:       functions for scaling cosmogenic nuclide production rates
-sim:           geomorphic and exposure models
-util:          utility functions
-na:            Cython implementation of the neighborhood algorithm
-datareduction: functions for reducing AMS data (work in progress)
+* muon:          production from muons
+* production:    spallation and total production rate functions
+* scaling:       functions for scaling cosmogenic nuclide production rates
+* sim:           geomorphic and exposure models
+* util:          utility functions
+* na:            Cython implementation of the neighborhood algorithm
+* datareduction: functions for reducing AMS data (work in progress)
 
 
 Installation
