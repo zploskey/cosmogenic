@@ -33,12 +33,21 @@ This can be accomplished by running "pip install -r pip-requirements" in the pro
 Until we begin to produce official release tarballs, you will need Cython and a working C compiler to build this project. Testing has been done using GCC.
 
 To build, execute the following commands:
-    $ python setup.py build_ext --inplace
+
+```
+$ python setup.py build_ext --inplace
+```
 
 Then install with either:
-    $ python setup.py install
+
+```
+$ python setup.py install
+```
 
 Or if you intend to make changes to the library's code, you can use:
-    $ python setup.py develop
+
+```
+$ python setup.py develop
+```
 
 This will allow any changes you make to the library code to be available without reinstalling each time.
