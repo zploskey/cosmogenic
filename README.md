@@ -2,8 +2,8 @@ Cosmogenic
 ==========
 
 Cosmogenic is a Python library for modeling in-situ cosmogenic nuclide production and geomorphic processes.
-
-Cosmogenic is still in beta. We welcome contributions.
+Cosmogenic is still in beta.
+We welcome contributions in the form of pull requests and bug reports.
 
 Modules
 -------
