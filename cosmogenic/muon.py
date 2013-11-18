@@ -21,8 +21,17 @@ A_GRAVITY = 9.80665  # standard gravity
 
 def phi_sl(z):
     """
-    Heisinger et al. 2002a eq 5
-    Total muon flux in muons cm-2 s-1
+    Calculate the sea level flux of muons (cm**-2 s**-1) at depth z.
+    Heisinger et al. 2002a eq 5.
+
+    Parameters
+    ----------
+    z : array_like, depths beneath surface [g / cm**2]
+
+    Returns
+    -------
+    phi_sl : ndarray
+             sea level muon flux
     """
     return 2 * np.pi * phi_vert_sl(z) / (n(z) + 1)
 
@@ -30,10 +39,15 @@ def phi_sl(z):
 def p_fast_sl(z, n):
     """
     Heisinger 2002a eq 14, production rate of nuclides by fast muons @ sea level
-    z is depth in g/cm2
-    n is the a nuclide object such as Be10Qtz
+    
+    Parameters
+    ----------
+    z : array_like, depth [g/cm**2]
+    n : nuclide object such as Be10Qtz
 
-    Output: Fast muon production rate at depth z in units atoms / g / yr
+    Returns
+    -------
+    p_fast_sl : Fast muon production rate at depth z in units atoms / g / yr
     """
     return (n.sigma0 * beta(z) * phi_sl(z) * ebar(z) ** ALPHA * n.Natoms
             * SEC_PER_YEAR)
