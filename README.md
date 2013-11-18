@@ -2,13 +2,28 @@ Cosmogenic
 ==========
 
 Cosmogenic is a Python library for modeling in-situ cosmogenic nuclide production and geomorphic processes.
-Cosmogenic is still in beta.
-We welcome contributions in the form of pull requests and bug reports.
+It includes total nuclide production rates (from reactions due to spallation + muons) for Be-10 and Al-26 in quartz, and Cl-36 in K-feldspar.
+Muon production is modeled after Heisinger (2002a,b) with some modified constants.
+Production rates can be scaled to a site latitude and altitude using the Lal/Stone scaling scheme (Stone 2000).
+More scaling schemes and production pathways are planned to be implemented in the future.
+
+In the "sim" module, Cosmogenic provides functions to integrate the production rate functions over time in different exposure, erosion, and burial scenarios.
+It provides the tools to model and predict cosmogenic nuclide concentrations in surface samples or depth profiles given a specific erosion history.
+
+In the "na" module, Cosmogenic provides a way to invert cosmogenic nuclide data for model parameters of your choice using the Neighborhood Algorithm (Sambridge 2000a,b).
+The Neighborhood Algorithm is completely general, and can be used to invert for the parameters of any model callable from Python.
+The user must write a misfit function to determine the goodness of fit to the data for a set of model parameters.
+
+This library is still under heavy development.
+Predictive models of cosmogenic concentrations for a prescribed erosion history are robust.
+Tools for calculating exposure ages are still experimental.
+If you want to calculate exposure ages, you would be best served by using the exposure age calculator at http://hess.ess.washington.edu.
+
+Cosmogenic is beta software. We welcome contributions in the form of pull requests and bug reports.
 
 Modules
 -------
 
-* datareduction: functions for reducing AMS data (work in progress)
 * muon:          production from muons
 * production:    spallation and total production rate functions
 * scaling:       functions for scaling cosmogenic nuclide production rates
@@ -16,6 +31,10 @@ Modules
 * na:            Cython implementation of the neighborhood algorithm
 * nuclide:       specific nuclides / target material models
 * util:          utility functions
+
+Experimental modules still in heavy development:
+* dating:        functions for calculating exposure ages
+* datareduction: functions for reducing AMS data
 
 
 Installation
