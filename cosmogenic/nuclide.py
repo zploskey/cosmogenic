@@ -19,6 +19,15 @@ class Be10Qtz():
     """
 
     def __init__(self, constants='stone'):
+        """
+        Parameters
+        ----------
+        constants : string
+                    Muon constants to use. Accepts "heisinger" for the values
+                    from Heisinger 2002. Using "stone" will use unpublished
+                    muon constants derived from a fit to a continously exposed
+                    and slowly eroding surface in Antarctica.
+        """
         self.Natoms = 2.0046e22 # atoms of O / g quartz
         self.LAMBDA = 4.998e-7
         
