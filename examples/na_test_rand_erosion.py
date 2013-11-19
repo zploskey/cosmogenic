@@ -53,9 +53,9 @@ con['dz_m'] = np.array([  9,   2,   4,  2,
 con['dz'] = con['dz_m'] * 100 * con['rho']
 avg_dz_m = con['dz_m'].mean()
 
-t, z_targ = sim.depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
+t, z_targ = sim.glacial_depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
                              con['dz_m'], n_gl=con['n_gl'])
-_, z_const = sim.depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
+_, z_const = sim.glacial_depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
                               avg_dz_m, n_gl=con['n_gl'])
 
 fig_height = 3.5 # in.

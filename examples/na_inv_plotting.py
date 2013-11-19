@@ -29,14 +29,14 @@ ms *= con['max_dz'] / con['rho'] / 100.0
 
 dz_true_m = con['dz_true_m']
 # get data for plotting a depth vs time curve
-t_true, z_true = sim.depth_v_time(con['t_gl'], con['t_int'], 
+t_true, z_true = sim.glacial_depth_v_time(con['t_gl'], con['t_int'], 
                                   con['t_postgl'], dz_true_m, 
                                   n_gl=con['n_gl'])
 dvt_len = 2 * (con['n_gl'] + 1)
 fit_t = np.zeros((misfits.size, dvt_len))
 fit_z = np.empty((misfits.size, dvt_len))
 for i in range(misfits.size):
-    fit_t[i, :], fit_z[i, :] = sim.depth_v_time(con['t_gl'], con['t_int'],
+    fit_t[i, :], fit_z[i, :] = sim.glacial_depth_v_time(con['t_gl'], con['t_int'],
                                                 con['t_postgl'], ms[i], 
                                                 n_gl=con['n_gl'])
 

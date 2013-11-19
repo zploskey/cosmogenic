@@ -25,7 +25,7 @@ dvt_len = 2 * (con['n_gl'] + 1)
 fit_t = np.zeros((misfits.size, dvt_len))
 fit_z = np.empty((misfits.size, dvt_len))
 for i in range(misfits.size):
-    fit_t[i, :], fit_z[i, :] = sim.depth_v_time(con['t_gl'], con['t_int'],
+    fit_t[i, :], fit_z[i, :] = sim.glacial_depth_v_time(con['t_gl'], con['t_int'],
                                                 con['t_postgl'], ms_m[i], 
                                                 n_gl=con['n_gl'])
 

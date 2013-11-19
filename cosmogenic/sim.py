@@ -98,7 +98,7 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
         conc += expose(z_cur, t_begint, t_endint, n, p)
     return conc
 
-def depth_v_time(gl, intergl, postgl, dz, n_gl=None):
+def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     """ Returns a tuple of times and depths of a surface sample.
    
     Parameters

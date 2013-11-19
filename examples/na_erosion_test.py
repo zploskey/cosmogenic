@@ -58,7 +58,7 @@ p = UnivariateSpline(zs, prod_rates, k=3, s=0)
 joblib.dump(p, 'production_rate.dat')
 
 # get data for plotting a depth vs time curve, meters and years
-t_true, z_true = sim.depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
+t_true, z_true = sim.glacial_depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
                                   con['dz_true_m'], n_gl=con['n_gl'])
 
 conc_true = sim.multiglaciate(dz_true, con['t_gl'], con['t_int'],

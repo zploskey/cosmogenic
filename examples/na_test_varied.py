@@ -57,7 +57,7 @@ con['dz_m'] = np.array([  4.5,   3.5,   2.5,  1.5,
 con['dz'] = con['dz_m'] * 100 * con['rho']
 
 # create points for the true erosion history model
-con['t'], con['z_true'] = sim.depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
+con['t'], con['z_true'] = sim.glacial_depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
                              con['dz_m'], n_gl=con['n_gl'])
 
 # plot the true model erosion history
@@ -216,7 +216,7 @@ fit_z = np.empty((misfits.size, dvt_len))
 for i in range(misfits.size):
     cur_m = np.ones(con['n_gl']) * ms_m[i, -1]
     cur_m[0:con['n_params']] = ms_m[i]
-    fit_t[i, :], fit_z[i, :] = sim.depth_v_time(con['t_gl'], con['t_int'],
+    fit_t[i, :], fit_z[i, :] = sim.glacial_depth_v_time(con['t_gl'], con['t_int'],
                                                 con['t_postgl'], cur_m, 
                                                 n_gl=con['n_gl'])
 
@@ -224,7 +224,7 @@ min_idx = np.argmin(errors)
 best_m_m = models_m[min_idx].copy()
 full_best_m = np.ones(con['n_gl']) * best_m_m[-1]
 full_best_m[0:con['n_params']] = best_m_m.copy()
-_, best_fit_z = sim.depth_v_time(con['t_gl'], con['t_int'],
+_, best_fit_z = sim.glacial_depth_v_time(con['t_gl'], con['t_int'],
                                           con['t_postgl'], full_best_m,
                                           n_gl=con['n_gl'])
 
