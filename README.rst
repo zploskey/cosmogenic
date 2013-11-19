@@ -10,7 +10,7 @@ This package contains:
     Muon production is modeled after Heisinger (2002a,b) with some modified constants.
 *   Scaling functions to scale production rates to a site latitude and altitude using the Lal/Stone scaling scheme (Stone 2000). More scaling schemes and production pathways are planned to be implemented in the future.
 *   Functions to integrate the production rate functions over time in different exposure, erosion, and burial scenarios.     It provides the tools to model and predict cosmogenic nuclide concentrations in surface samples or depth profiles given a specific erosion history.
-*   Tools to invert cosmogenic nuclide data for model parameters of your choice using the Neighborhood Algorithm (Sambridge 2000a,b).
+*   Tools to invert cosmogenic nuclide data for model parameters of your choice using the Neighborhood Algorithm (Sambridge 1999a,b).
     The Neighborhood Algorithm is completely general, and can be used to invert for the parameters of any model callable from Python.
     The user can write a Python misfit function to determine the goodness of fit to the data for a set of model parameters, and passes this to the library to perform the inversion.
 
