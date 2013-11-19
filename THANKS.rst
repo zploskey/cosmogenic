@@ -6,7 +6,7 @@ People
 ------
 
 * Zach Ploskey for core functionality and na module
-* John Stone for design guidance and help verification
+* John Stone for design guidance and help in verification of muon code
 
 Institutions
 ------------
