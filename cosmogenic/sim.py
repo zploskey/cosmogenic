@@ -12,10 +12,27 @@ import scipy.integrate
 
 def nexpose(P, nuclide, z, t, tol=1e-4):
     """
-    Calculate concentrations for an arbitrary depth
-    history z(t).
+    Calculate concentrations for an arbitrary depth history z(t).
 
     :math:`\\int^t_0 P(z(t)) \\exp(-\\lambda t) dt`
+
+    Parameters
+    ----------
+    P : function or callable
+        P(z), production rate of nuclide in atoms/g/year as function of depth
+        in g/cm**2.
+    nuclide : cosmogenic.nuclide object
+    z : function or callable
+        z(t), Depth in g/cm**2 as a function of time t in years. Time decreases
+        until the present.
+    tol : float
+          error tolerance for the integration
+
+    Returns
+    -------
+    (C, err) : tuple
+               C is the concentration in atoms/g
+               err is an estimate of the absolute error in C [atoms/g]
     """
 
     # define the integrand: instantaneous production and decay
@@ -37,22 +54,26 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
     are easy to vary for the Monte Carlo simulation--i.e. the times of
     glacial and interglacial periods are in lengths rather than absolute ages.
     Depths of the sample and the depths eroded during each glaciation are both
-    in units of g/cm2, avoiding tying our results to a rock density. Presumably 
-    this could be adapted to handle variable densities but that might get
-    really complicated.
+    in units of g/cm**2, avoiding tying our results to a rock density. 
     
-    Parameters:
-    z: vector of samples depths beneath the modern surface (g/cm2)
-    t_gl: vector of lengths of time spent ice covered in each glaciation (yr)
-    t_intergl: vector, time spent exposed for each interglaciation  period (yr)
-    dz: vector of the depths eroded during each glaciation (g/cm2)
-    t_postgl: time the sample has been exposed since deglaciation (yr)
-    n: nuclide object
-    p: production rate function p(z)
-    
-    Optional Parameters:
-    n_gl: If supplied, this is the number of glaciations to simulate
-    assuming that t_gl and t_intergl are scalars, not vectors.
+    Parameters
+    ----------
+    z : array_like or scalar
+        array of samples depths beneath the modern surface (g/cm**2)
+    t_gl : array_like or scalar
+           array of lengths of time spent ice covered in each glaciation (yr)
+    t_intergl : array_like or scalar
+                vector, length of exposure periods (yr)
+    dz : vector of the depths eroded during each glaciation (g/cm2)
+    t_postgl : float
+               time the sample has been exposed since deglaciation (yr)
+    n : nuclide object
+    p : function or callable
+        production rate function p(z), should return a production rate in 
+        atoms/g/year at depth z (in g/cm*2).
+    n_gl : int, optional
+           If supplied, this is the number of glaciations to simulate
+           assuming that t_gl and t_intergl are scalars, not vectors.
     """
     if n_gl is not None:
         ngl = n_gl
@@ -79,11 +100,18 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
 
 def depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     """ Returns a tuple of times and depths of a surface sample.
-    
-    gl: vector of lengths of each glaciation (yr)
+   
+    Parameters
+    ----------
+    gl : array_like
+         vector of lengths of each glaciation (yr)
     intergl: vector of lengths of interglacial periods (yr)
     postgl: time since last deglaciation (yr)
     dz: vector of glacial erosion depths during each glaciation 
+
+    Returns
+    -------
+
     """
     gl = np.atleast_1d(gl)
     intergl = np.atleast_1d(intergl)

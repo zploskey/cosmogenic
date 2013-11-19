@@ -12,6 +12,7 @@ from scipy.interpolate import dfitpack
 
 from cosmogenic import muon
 from cosmogenic import scaling
+from cosmogenic import util
 
 LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
 LAMBDA_fast = 4320.0 # after Heisinger 2002
@@ -26,10 +27,25 @@ def P_sp(z, n, scaling=None, alt=0, lat=75):
     where f_scaling is a scaling factor. It currently scales for altitude
     and latitude after Stone (2000).
 
-    z: depth in g / cm**2 (vector or scalar)
-    alt: site altitude in meters
-    lat: site latitude (degrees)
-    n: nuclide object
+    Parameters
+    ----------
+    z : array_like
+       depth in g/cm**2 (vector or scalar)
+    n : nuclide object from cosmogenic.nuclide
+        The nuclide to you want a production rate for. Can be a user-defined
+        object as long as it satisfies the same interfaces as the objects
+        in cosmogenic.nuclide.
+    scaling : string, optional
+              If "stone" applies Stone 2000 scaling factor
+    alt : array_like
+          site altitude in meters
+    lat : array_like,
+          site latitude (in degrees North)
+    
+    Returns
+    -------
+    p_sp : array_like
+           production rate from spallation in atoms/g/year
     """
     if scaling == 'stone':
         f_scaling = scal.stone2000_sp(lat, alt)
@@ -42,11 +58,27 @@ def P_sp(z, n, scaling=None, alt=0, lat=75):
 def P_tot(z, alt, lat, n, scaling=None):
     """
     Total production rate of nuclide n in atoms / g of material / year
+   
+    Parameters
+    ----------
+    z : array_like
+       depth in g/cm**2 (vector or scalar)
+    alt : array_like
+          site altitude in meters
+    lat : array_like,
+          site latitude (in degrees North)
+    n : nuclide object from cosmogenic.nuclide
+        The nuclide to you want a production rate for. Can be a user-defined
+        object as long as it satisfies the same interfaces as the objects
+        in cosmogenic.nuclide.
+    scaling : string, optional
+              If "stone" applies Stone 2000 scaling factor to spallation
+              production rate.
     
-    z: depth in g / cm**2 (vector or scalar)
-    alt: site altitude in meters
-    lat: site latitude (degrees)
-    n: nuclide object
+    Returns
+    -------
+    p : array_like
+           total production rate in atoms/g/year
     """
     return P_sp(z, n, scaling, alt, lat) + muon.P_mu_total(z, alt, n)
 
@@ -55,10 +87,20 @@ def interpolate_P_tot(max_depth, npts, alt, lat, n, scaling='stone'):
     """
     Interpolates the production rate function using a spline interpolation.
 
-    max_depth: maximum depth to interpolate to (g / cm**2)
-    alt: site altitude in meters
-    lat: site latitude (degrees)
-    n: nuclide object
+    Parameters
+    ----------
+    max_depth : float
+                maximum depth to interpolate to in g/cm**2
+    npts : int
+           number of points to use in interpolation
+    alt : float
+          site altitude in meters
+    lat : float
+          site latitude (degrees)
+    n : nuclide object
+    scaling : string, optional
+              If set to "stone", applies Stone 2000 scaling scheme to
+              the spallation production rate.
     """
     zs = np.unique(np.logspace(0, np.log2(max_depth + 1), npts, base=2)) - 1
     prod_rates = P_tot(zs, alt, lat, n, scaling)
@@ -66,38 +108,67 @@ def interpolate_P_tot(max_depth, npts, alt, lat, n, scaling='stone'):
     return p, zs, prod_rates
 
 class ProductionSpline(InterpolatedUnivariateSpline):
-    
-    def __init__(self, x=None, y=None, w=None, bbox = [None]*2, k=3, s=None, 
+    """
+    One-dimensional interpolating spline for a given set of data points.
+
+    Fits a spline y=s(x) of degree `k` to the provided `x`, `y` data. Spline
+    function passes through all provided points. Equivalent to
+    `UnivariateSpline` with s=0.
+
+    Parameters
+    ----------
+    x : (N,) array_like
+        production rate data points
+    y : (N,) array_like
+        depths in g/cm**2
+        
+    w : (N,) array_like, optional
+    Weights for spline fitting. Must be positive. If None (default),
+    weights are all equal.
+    bbox : (2,) array_like, optional
+    2-sequence specifying the boundary of the approximation interval. If
+    None (default), bbox=[x[0],x[-1]].
+    k : int, optional
+    Degree of the smoothing spline. Must be 1 <= `k` <= 5.
+
+    See Also
+    --------
+    InterpolatedUnivariateSpline : Superclass in NumPy 
+    Notes
+    -----
+    The number of data points must be larger than the spline degree `k`.
+    """
+
+    def __init__(self, x=None, y=None, w=None, bbox = [None]*2, k=3, s=0, 
                        filename=None):
         """
-        Input:
-          x,y   - 1-d sequences of data points (x must be
-                  in strictly ascending order)
+
+        Parameters
+        ----------
+        x,y : 1-d sequences of data points (z must be in strictly ascending
+              order). x is production rate, y is corresponding depth
 
         Optional input:
           w          - positive 1-d sequence of weights
           bbox       - 2-sequence specifying the boundary of
                        the approximation interval.
-                       By default, bbox=[x[0],x[-1]]
-          k=3        - degree of the univariate spline.
+                       By default, bbox=[p[0],p[-1]]
+          k          - degree of the univariate spline (defaults to 3)
           s          - positive smoothing factor defined for
                        estimation condition:
-                         sum((w[i]*(y[i]-s(x[i])))**2,axis=0) <= s
+                         sum((w[i]*(z[i]-s(p[i])))**2,axis=0) <= s
                        Default s=len(w) which should be a good value
                        if 1/w[i] is an estimate of the standard
                        deviation of y[i].
           filename   - file to load a saved spline from
-          
-          
-
         """
         
         if (x == None) or (y == None) and (filename != None):
             with open(filename, "br") as fd:
-                self._data = pickle.load(fd)
+                self._data = util.unpickle(fd)
         else:
             self._data = dfitpack.fpcurf0(x,y,k,w=w,
-                                      xb=bbox[0],xe=bbox[1],s=0)
+                                      xb=bbox[0],xe=bbox[1],s=s)
                                     
         self._reset_class()
 
@@ -118,7 +189,7 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         version.
         """
         with open(filename, "bw") as fd:
-            pickle.dump(self._data, fd)
+            util.pickle(self._data, fd)
 
 
 def load_interpolation(name):
