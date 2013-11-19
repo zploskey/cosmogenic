@@ -190,19 +190,3 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         """
         with open(filename, "bw") as fd:
             util.pickle(self._data, fd)
-
-
-def load_interpolation(name):
-    """
-    Load a spline interpolation from disk.
-
-    name: (string) name of file to load from
-    """
-    return ProductionSpline(filename=name)
-
-
-def save_interpolation(name, spline):
-    """
-    Save a spline interpolation to disk.
-    """
-    return spline.save(name)
