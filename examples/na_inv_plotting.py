@@ -3,7 +3,7 @@ from __future__ import division
 import numpy as np
 import numpy.random
 import matplotlib.pyplot as plt
-import joblib
+from cosmogenic import util
 
 import nuclide
 import sim
@@ -19,9 +19,9 @@ conc_meas = np.genfromtxt('conc_meas.txt')
 conc_meas_err = n.measurement_error(conc_meas)
 ms = np.genfromtxt('ms.txt')
 misfits = np.genfromtxt('misfits.txt')
-constraints = joblib.load('constraints.dat')
+constraints = util.unpickle('constraints.dat')
 con = constraints
-p = joblib.load('production_rate.dat')
+p = util.unpickle('production_rate.dat')
 dof = con['n_gl']
 
 # denormalize the models

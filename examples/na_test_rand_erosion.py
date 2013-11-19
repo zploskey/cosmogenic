@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy as np
-import joblib
+from cosmogenic import util
 import matplotlib as mpl
 import matplotlib.font_manager 
 

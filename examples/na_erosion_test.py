@@ -55,7 +55,7 @@ prod_rates = production.P_tot(zs, con['alt'], con['lat'], con['nuclide'])
 # interp1d used as above gives crazy negative dives around z = 82000, do not
 # want that! UnivariateSpline seems to work much much better
 p = UnivariateSpline(zs, prod_rates, k=3, s=0)
-joblib.dump(p, 'production_rate.dat')
+util.pickle(p, 'production_rate.dat')
 
 # get data for plotting a depth vs time curve, meters and years
 t_true, z_true = sim.glacial_depth_v_time(con['t_gl'], con['t_int'], con['t_postgl'], 
@@ -84,7 +84,7 @@ print 'Error from permutation =', perm_err
 hi_lim = np.ones(con['n_gl'])
 lo_lim = np.zeros(con['n_gl'])
 
-joblib.dump(con, 'constraints.dat') # save that input data!
+util.pickle(con, 'constraints.dat') # save that input data!
 concs = []
 SAVE_CONCENTRATION_DATA = True
 def fn(m):

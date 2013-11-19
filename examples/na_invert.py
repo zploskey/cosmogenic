@@ -1,16 +1,16 @@
 from __future__ import division
 
 import numpy as np
-import joblib
+from cosmogenic import util
 
 import sim
 import nuclide
 import na
 import production
 
-con = joblib.load('con.dat')
+con = util.unpickle('con.dat')
 print con
-p = joblib.load('production_rate.dat')
+p = util.unpickle('production_rate.dat')
 
 # we need a way to measure error between models
 def chi2(a, b, sigma):

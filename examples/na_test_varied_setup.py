@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy as np
-import joblib
+from cosmogenic import util
 import matplotlib as mpl
 import matplotlib.font_manager 
 
@@ -130,7 +130,7 @@ ax.set_xscale('log')
 meas_fig.subplots_adjust(left=0.15) #, top=0.95
 meas_canvas.print_figure('meas_conc.png', dpi=500)
 
-joblib.dump(con, 'con.dat') # save that input data!
-joblib.dump(p, 'production_rate.dat')
+util.pickle(con, 'con.dat') # save that input data!
+util.pickle(p, 'production_rate.dat')
 
 
