@@ -16,18 +16,18 @@ P36_REF_ST_PUREKFELD = 160.0 # roughly, atoms / g K / yr
 class Be10Qtz():
     """
     Data for the radioisotope Beryllium-10
+
+    Parameters
+    ----------
+    constants : string, optional
+                Muon constants to use. Accepts "heisinger" for the values
+                from Heisinger 2002. Using "stone" (default) will use
+                unpublished muon constants derived from a fit to a
+                continously exposed and slowly eroding surface in
+                Antarctica.
     """
 
     def __init__(self, constants='stone'):
-        """
-        Parameters
-        ----------
-        constants : string
-                    Muon constants to use. Accepts "heisinger" for the values
-                    from Heisinger 2002. Using "stone" will use unpublished
-                    muon constants derived from a fit to a continously exposed
-                    and slowly eroding surface in Antarctica.
-        """
         self.Natoms = 2.0046e22 # atoms of O / g quartz
         self.LAMBDA = 4.998e-7
         
@@ -63,6 +63,7 @@ class Be10Qtz():
         self.P0 = P10_REF_ST - p_mu_tot
     
     def relative_error(self, concentration):
+        """ Approximate relative error for concentration. """
         return 0.9 * concentration**(-0.29402281)
     
     def measurement_error(self, concentration):
@@ -122,6 +123,7 @@ class Al26Qtz():
         return 4.40538328952 * concentration**(-0.32879674)
     
     def measurement_error(self, concentration):
+        """ Approximate measurement error for the concentration. """
         return concentration * self.relative_error(concentration)
 
 class Cl36Kfeld():
@@ -157,8 +159,13 @@ class Cl36Kfeld():
         self.P0 = P36_REF_ST - p_mu_tot
     
     def relative_error(self, concentration):
-        # for now assume same statistics as Al-26
+        """
+        Approximate relative error for concentration.
+        
+        For now, assumes same statistics as Al-26.
+        """
         return 4.40538328952 * concentration**(-0.32879674)
     
     def measurement_error(self, concentration):
+        """ Approximate measurement error for concentration. """
         return concentration * self.relative_error(concentration)
