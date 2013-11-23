@@ -22,7 +22,7 @@ If you want to calculate exposure ages, you would be best served by using the ex
 Cosmogenic is open source software (under the BSD license), and is currently in beta.
 It should run using either Python 2 (>=2.6) or Python 3 (>=3.2).
 We welcome contributions in the form of pull requests and bug reports.
-Please reports problems, suggestions and requests on the issue tracker:
+Please report problems, suggestions and requests on the issue tracker:
 
 https://github.com/zploskey/cosmogenic/issues
 
