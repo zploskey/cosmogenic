@@ -58,15 +58,15 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
     
     Parameters
     ----------
-    z : array_like or scalar
-        array of samples depths beneath the modern surface (g/cm**2)
+    dz : vector of the depths eroded during each glaciation (g/cm2)
     t_gl : array_like or scalar
            array of lengths of time spent ice covered in each glaciation (yr)
     t_intergl : array_like or scalar
                 vector, length of exposure periods (yr)
-    dz : vector of the depths eroded during each glaciation (g/cm2)
     t_postgl : float
                time the sample has been exposed since deglaciation (yr)
+    z : array_like or scalar
+        array of samples depths beneath the modern surface (g/cm**2)
     n : nuclide object
     p : function or callable
         production rate function p(z), should return a production rate in 
