@@ -164,8 +164,7 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         """
         
         if (x == None) or (y == None) and (filename != None):
-            with open(filename, "br") as fd:
-                self._data = util.unpickle(fd)
+            self._data = util.unpickle(filename)
         else:
             self._data = dfitpack.fpcurf0(x,y,k,w=w,
                                       xb=bbox[0],xe=bbox[1],s=s)
@@ -188,5 +187,4 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         It is probably safest to create a new interpolation for a new scipy
         version.
         """
-        with open(filename, "bw") as fd:
-            util.pickle(self._data, fd)
+        util.pickle(self._data, filename)
