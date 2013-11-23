@@ -11,7 +11,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import dfitpack
 
 from cosmogenic import muon
-from cosmogenic import scaling
+from cosmogenic import scaling as scal
 from cosmogenic import util
 
 LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
@@ -48,7 +48,7 @@ def P_sp(z, n, scaling=None, alt=0, lat=75):
            production rate from spallation in atoms/g/year
     """
     if scaling == 'stone':
-        f_scaling = scaling.stone2000_sp(lat, alt)
+        f_scaling = scal.stone2000_sp(lat, alt)
     else:
         f_scaling = 1.0
     
