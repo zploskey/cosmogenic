@@ -141,6 +141,12 @@ def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
 
 
 def expose(z, t_init, t_final, n, p):
+    """
+    Expose samples a depths z (g/cm**2) from time t_init until time t_final
+    (both in years) at production rate p(z). Adjust their concentrations for
+    radioactive decay since t_final. Return the concentration of nuclide n.
+    """
+    # See note in simple_expose for why we must assign this temporary.
     pofz = p(z)
     L = n.LAMBDA
     conc = (pofz / L) * (np.exp(-L * t_final) - np.exp(-L * t_init))
