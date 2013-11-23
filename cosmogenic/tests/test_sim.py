@@ -7,9 +7,9 @@ import numpy as np
 import cosmogenic.sim as sim
 import cosmogenic.nuclide as nuclide
 import cosmogenic.production as prod
+from cosmogenic.tests.TestBase import TestBase
 
-
-class TestSim(unittest.TestCase):
+class TestSim(TestBase):
 
     def setUp(self):
         self.alt = 250.0
@@ -32,9 +32,15 @@ class TestSim(unittest.TestCase):
                 self.p)
         self.assertTrue((N < Nmoretime).all())
         self.assertTrue((N > Nmoredepth).all())
-
+    
     def test_expose(self):
-        N = sim.expose(self.z, 20000.0, 10000.0, self.n, self.p)
+        ti = 95000.0
+        tf = self.t_postgl
+        N = sim.expose(self.z, ti, tf, self.n, self.p)
+        Nmoretime = sim.expose(self.z, ti + 500.0, tf - 500.0, self.n, self.p)
+        Nmoredepth = sim.expose(self.z + 500.0, ti, tf, self.n, self.p)
+        self.assertTrue((N < Nmoretime).all())
+        self.assertTrue((N > Nmoredepth).all())
 
     def test_multiglaciate(self):
         

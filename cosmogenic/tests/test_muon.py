@@ -1,20 +1,29 @@
 from __future__ import print_function, division
 
+import unittest
+
 import numpy as np
-import nose
 
 import cosmogenic.muon as muon
 import cosmogenic.nuclide as nuclide
+from cosmogenic.tests.TestBase import TestBase
 
-def test_phi_sl():
-    z = np.linspace(0, 15000.0, 10)
-    res = muon.phi_sl(z)
-    assert res.size == z.size, "Input and output sizes are inconsistent"
-    pass
+class TestMuon(TestBase):
 
-def test_P_mu_total():
-    be10 = nuclide.Be10Qtz()
-    z = np.linspace(0, 1000, 20)
-    res = muon.P_mu_total(z, 126.0, be10)
-    assert res.size == z.size, "Input and output sizes are inconsistent"
-    pass
+    def setUp(self):
+        self.z = np.linspace(0, 1.1775e6, 10)
+        self.n = nuclide.Be10Qtz()
+        self.alt = 0.0
+
+    def test_phi_sl(self):
+        res = muon.phi_sl(self.z)
+        self.assertTrue(res.size == self.z.size)
+        self.decreases_with_depth(res)
+
+    def test_P_mu_total(self):
+        res = muon.P_mu_total(self.z, self.alt, self.n)
+        self.assertTrue(res.size == self.z.size)
+        self.decreases_with_depth(res)
+
+if __name__ == "__main__":
+    unittest.main()

@@ -207,18 +207,11 @@ LofZ = sp.interpolate.UnivariateSpline(ranges, momentums)
 
 
 def LZ_interp(z):
-    z = np.atleast_1d(z)
-    out = np.empty_like(z)
-
-    bad_idxs = z > np.log(max_range)
-    good_idxs = ~bad_idxs
-
-    out[good_idxs] = LofZ(z[good_idxs])
-    if not good_idxs.all():
-        slope = LofZ(max_range, 1)  # first derivative
-        b = LofZ(max_range)
-        overshoot = z[bad_idxs] - max_range
-        out[bad_idxs] = b + slope * overshoot
+    zin = np.atleast_1d(z).copy()
+    out = np.empty_like(zin)
+    bad_idxs = zin > np.log(max_range)
+    zin[bad_idxs] = 1.0
+    out = LofZ(zin)
     return out
 
 
@@ -277,7 +270,7 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     # Integrate the stopping rate to get the vertical muon flux at depth z
     # at the sample site
     phi_v = np.zeros_like(z)
-    tol = 1e-4  # relative error tolerance
+    tol = 1e-6  # relative error tolerance
     lim = 2e5  # limit of our integration
 
     # we want to do the integrals in the order of decreasing depth
@@ -287,23 +280,26 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     rev_sort_idxs = np.argsort(z)[::-1]
     # reordering of z to be in increasing order
     zsorted = z[rev_sort_idxs]
-    # keep track of the vertical flux at the previous depth
-    prev_phi_v = 0.0
-    prev_z = lim
-    for i, zi in enumerate(zsorted):
-        idx = rev_sort_idxs[i]
-        phi_v[idx], _ = scipy.integrate.quad(
-                Rv, zi, prev_z, epsrel=tol, epsabs=0)
-        phi_v[idx] += prev_phi_v
-        prev_phi_v = phi_v[idx]
-        prev_z = zi
-
-    # add in the flux below 2e5 g / cm2, assumed to be constant
+    
+    # start with the flux below 2e5 g / cm2, assumed to be constant
     a = 258.5 * 100 ** 2.66
     b = 75 * 100 ** 1.66
     phi_200k = ((a / ((2e5 + 21000.0) * (((2e5 + 1000.0) ** 1.66) + b)))
             * np.exp(-5.5e-6 * 2e5))
     phi_v += phi_200k
+    
+    # keep track of the vertical flux at the previous depth
+    prev_phi_v = phi_200k
+    prev_z = lim
+    for i, zi in enumerate(zsorted):
+        idx = rev_sort_idxs[i]
+        if zi > lim:
+            continue
+        phi_v[idx], _ = scipy.integrate.quad(
+                    Rv, zi, prev_z, epsrel=tol, epsabs=0)
+        phi_v[idx] += prev_phi_v
+        prev_phi_v = phi_v[idx]
+        prev_z = zi
 
     nofz = n(z + deltaH)  # exponent for total depth (atmosphere + rock)
     # d(n(z))/dz
