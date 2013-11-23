@@ -48,7 +48,7 @@ def P_sp(z, n, scaling=None, alt=0, lat=75):
            production rate from spallation in atoms/g/year
     """
     if scaling == 'stone':
-        f_scaling = scal.stone2000_sp(lat, alt)
+        f_scaling = scaling.stone2000_sp(lat, alt)
     else:
         f_scaling = 1.0
     
