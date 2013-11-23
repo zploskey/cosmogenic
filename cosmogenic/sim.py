@@ -75,21 +75,18 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
            If supplied, this is the number of glaciations to simulate
            assuming that t_gl and t_intergl are scalars, not vectors.
     """
-    #z = np.atleast_1d(z)
-    #dz = np.atleast_1d(dz)
-    #t_gl = np.atleast_1d(t_gl)
-    #t_intergl = np.atleast_1d(t_intergl)
+    
+    z = np.atleast_1d(z)
 
     if n_gl is not None:
         if n_gl > 1:
             ones = np.ones(n_gl)
-            z *= ones
             dz *= ones
             t_gl *= ones
             t_intergl *= ones
     else:
         n_gl = dz.size
-        assert z.size == dz.size == t_gl.size == t_intergl.size
+        assert dz.size == t_gl.size == t_intergl.size
    
     # add the atoms created as we go back in time
     # recent interglacial first
