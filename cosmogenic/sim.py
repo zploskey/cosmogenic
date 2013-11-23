@@ -75,28 +75,35 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
            If supplied, this is the number of glaciations to simulate
            assuming that t_gl and t_intergl are scalars, not vectors.
     """
+    #z = np.atleast_1d(z)
+    #dz = np.atleast_1d(dz)
+    #t_gl = np.atleast_1d(t_gl)
+    #t_intergl = np.atleast_1d(t_intergl)
+
     if n_gl is not None:
-        ngl = n_gl
-        t_gl = np.ones(ngl) * t_gl
-        t_intergl = np.ones(ngl) * t_intergl
-        dz = np.atleast_1d(dz)
-        if dz.size == 1:
-            dz = np.ones(ngl) * dz
+        if n_gl > 1:
+            ones = np.ones(n_gl)
+            z *= ones
+            dz *= ones
+            t_gl *= ones
+            t_intergl *= ones
     else:
-        ngl = dz.size
-    
+        n_gl = dz.size
+        assert z.size == dz.size == t_gl.size == t_intergl.size
+   
     # add the atoms created as we go back in time
     # recent interglacial first
     conc = simple_expose(z + postgl_shielding, t_postgl, n, p) 
-    z_cur = np.atleast_1d(z).copy()    # start at current depths
+    z_cur = z.copy()    # start at current depths
     t_begint = t_postgl # the time when the current interglacial began
     t_endint = 0.0      # time (now) when current interglacial ended
-    for i in range(ngl):
+    for i in range(n_gl):
         z_cur += dz[i] # go back to depth and time before glacial erosion
         t_endint = t_begint + t_gl[i]
         t_begint = t_endint + t_intergl[i]
         conc += expose(z_cur, t_begint, t_endint, n, p)
     return conc
+
 
 def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     """ Returns a tuple of times and depths of a surface sample.
@@ -125,8 +132,6 @@ def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     intergl = intergl * np.ones(n_gl)
     dz = dz * np.ones(n_gl)
     
-    import pdb; pdb.set_trace()
-
     # interleave the two arrays
     tmp = np.column_stack((gl, intergl)).reshape(1, gl.size * 2).flatten()
     t = np.add.accumulate(np.concatenate(([0, postgl], tmp)))
@@ -134,22 +139,39 @@ def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     z = np.add.accumulate(np.concatenate(([0, 0], tmp)))
     return (t, z)
 
+
 def expose(z, t_init, t_final, n, p):
+    pofz = p(z)
     L = n.LAMBDA
-    conc = (p(z) / L) * (np.exp(-L * t_final) - np.exp(-L * t_init))
+    conc = (pofz / L) * (np.exp(-L * t_final) - np.exp(-L * t_init))
     return conc
+
 
 def expose_from_site_data(z, t_init, t_final, n, h, lat):
     p = production.P_tot(z, h, lat, n)
     return (expose(z, t_init, t_final, n, p), p)
+
 
 def simple_expose_slow(z, t_exp, n, h, lat):
     # calculate the production rate
     p = production.P_tot(z, h, lat, n)
     return (p / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
 
+
 def simple_expose(z, t_exp, n, p):
-    return (p(z) / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
+    """
+    Expose samples at depths z (g/cm**2) for t_exp years, recording nuclide n
+    with production rate p (atoms/g/yr).
+    """
+    
+    # Note:
+    # We must calculate the production rate at depths z first.
+    # Otherwise, there are bizarre bugs when using the p = production.P_tot
+    # The test case for this function fails if we don't assign a temporary.
+    pofz = p(z)
+    N = (pofz / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
+    return N 
+
 
 def fwd_profile(z0, z_removed, t, n, p):
     """

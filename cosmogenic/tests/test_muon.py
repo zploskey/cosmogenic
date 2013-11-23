@@ -1,3 +1,5 @@
+from __future__ import print_function, division
+
 import numpy as np
 import nose
 
@@ -14,6 +16,5 @@ def test_P_mu_total():
     be10 = nuclide.Be10Qtz()
     z = np.linspace(0, 1000, 20)
     res = muon.P_mu_total(z, 126.0, be10)
-    print res
     assert res.size == z.size, "Input and output sizes are inconsistent"
     pass
