@@ -470,19 +470,18 @@ cpdef inline int binary_bin_search(DTYPE_t[:] A, DTYPE_t key) nogil:
             imax = imid
     
     return imin
-    
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-@cython.nonecheck(False)
-cdef np.ndarray[DTYPE_t, ndim=2] _walk(
+cpdef np.ndarray[DTYPE_t, ndim=2] _walk(
         int n,
         DTYPE_t[:, :] m,
         int start_idx,
         np.ndarray[DTYPE_t, ndim=1] logP,
         tuple lup,
         int walk_num,
-        int seed):
+        seed=None):
     """ Produces models in a random walk over the initial ensemble.
 
     Models should have a sampling density that approximates the model space
@@ -490,9 +489,14 @@ cdef np.ndarray[DTYPE_t, ndim=2] _walk(
     """
     # Each walk should have an independent random state so we do not overlap
     # in the numbers generated in each walk.
-    cdef uint64_t walk_seed = seed * (<uint64_t>walk_num + 2) * (
-            <uint64_t>start_idx + 1)
-    cdef cyrandom.Random rng = cyrandom.Random(walk_seed)
+    cdef uint64_t walk_seed
+    cdef cyrandom.Random rng    
+    if seed is None:
+        rng = cyrandom.Random()
+    else:
+        walk_seed = seed * (<uint64_t>walk_num + 2) * (
+                <uint64_t>start_idx + 1)
+        rng = cyrandom.Random(walk_seed)
     
     # capture tuple return values here
     cdef tuple tup
@@ -561,10 +565,12 @@ cdef np.ndarray[DTYPE_t, ndim=2] _walk(
     return resampled_models
 
 
+cpdef np.ndarray[DTYPE_t, ndim=2] walk_wrapper_bak(tuple w):
+    return _walk(w[0], w[1], w[2], w[3], w[4], w[5], w[6])
+
+
 cpdef np.ndarray[DTYPE_t, ndim=2] walk_wrapper(tuple w):
-    cdef np.ndarray[DTYPE_t, ndim=2] res =_walk(
-            w[0], w[1], w[2], w[3], w[4], w[5], w[6])
-    return res 
+    return _walk(*w)
 
 
 def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
@@ -645,7 +651,7 @@ def resample(m=None, x2v=None, dof=1, Nw=1, pts_per_walk=1000, lo_lim=0,
                     walkstart_idxs[i], logP, lup, i, seed)
     else:  # run in parallel
         walk_params = ((n, m, wi, logP, lup, i, seed)
-                 for i, wi in enumerate(walkstart_idxs))
+                for i, wi in enumerate(walkstart_idxs))
         logger.info('Importance resampling with parallel random walks.')
         asr = v.map(walk_wrapper, walk_params)
         asr.wait_interactive()
@@ -685,7 +691,7 @@ def plot_stats(stats, lo_lim, hi_lim, shape=None, m_true=None,
     margs = stats['marginals']
     edges = stats['bin_edges']
     d = margs.shape[1]  # number of model dimensions
-    m_true = np.atleast_1d(m_true)
+    m_true = np.atleast_1d(m_true) if m_true is not None else [None]*d 
     cdef int adj = 0
     if shape is None:
         if d <= 2:
@@ -754,7 +760,8 @@ def resample_and_plot(conf):
                        save=True)
     shape = conf['shape'] if 'shape' in conf else None
     m_true = conf['m_true'] if 'm_true' in conf else None
-    if ("plot" not in conf) or conf["plot"]:
+    plot = conf["plot"] if "plot" in conf else False
+    if plot:
         plot_stats(stats, conf['lo_lim'], conf['hi_lim'], shape=shape,
                    m_true=m_true)
     return stats
