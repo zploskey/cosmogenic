@@ -8,10 +8,10 @@ import math
 
 from . import muon
 
-ALPHA = 0.75
-P10_REF_ST = 4.49 # atoms / g / yr
-P36_REF_ST = 22.5 # atoms / g pure Kfeldspar / yr
-P36_REF_ST_PUREKFELD = 160.0 # roughly, atoms / g K / yr
+ALPHA = 0.75  # constant from Heisinger 2002
+P10_SLHL = 4.49  # Balco 2008 production rate, atoms / g / yr
+P36KFELD_SLHL = 22.5  # atoms / g pure Kfeldspar / yr
+P36K_SLHL = 160.0 # roughly, atoms / g K / yr
 
 class Be10Qtz():
     """
@@ -28,6 +28,7 @@ class Be10Qtz():
     """
 
     def __init__(self, constants='stone'):
+        self.P10_slhl = P10_SLHL
         self.Natoms = 2.0046e22 # atoms of O / g quartz
         self.LAMBDA = 4.998e-7
         
@@ -59,8 +60,8 @@ class Be10Qtz():
         # Production rate in atoms / g / yr from Stone, adjusted for 07KNSTD ala
         # Balco's 2008 paper. This number apparently includes production from
         # fast muons, so I have opted to subtract them here.
-        p_mu_tot = muon.P_mu_total(z=0, h=0, nuc=self) # full_data=True)
-        self.P0 = P10_REF_ST - p_mu_tot
+        p_mu_tot = muon.P_mu_total(z=0, n=self, h=0)
+        self.P0 = self.P10_slhl - p_mu_tot
     
     def relative_error(self, concentration):
         """ Approximate relative error for concentration. """
@@ -108,9 +109,9 @@ class Al26Qtz():
         
         self.k_neg = self.fC * self.fD * self.fstar
         # self.delk_neg = self.fC * self.fD * self.delfstar
-        p_mu_tot = muon.P_mu_total(z=0, h=0, nuc=self)
+        p_mu_tot = muon.P_mu_total(z=0, n=self, h=0)
         self.R2610 = 6.02 * 1.106 # ratio of Al26 to Be10 production at surface
-        self.P0 = (P10_REF_ST * self.R2610) - p_mu_tot
+        self.P0 = (P10_SLHL * self.R2610) - p_mu_tot
         
     def relative_error(self, concentration):
         """ Approximate fractional error for the concentration.
@@ -134,15 +135,18 @@ class Cl36Kfeld():
     """
 
     def __init__(self, constants='stone'):
-        self.Natoms = 2.164e21 # atoms K / g Kfeldspar, from John's program
+        self.Natoms = 2.164e21 # atoms K / g Kfeldspar
         self.LAMBDA = math.log(2) / 3.01e5 # decay constant, 1/yr
+        
+        self.P36_slhl = P36KFELD_SLHL
         
         # probability factors 
         self.fC = 0.12
         self.fD = 0.8020
         
         if constants == 'heisinger':
-            raise NotImplementedError()
+            raise NotImplementedError(
+                    "Heisinger 36-Cl is not yet implemented.")
         elif constants == 'stone':
             # John Stone, pers. communication
             self.fstar = 0.0568
@@ -155,8 +159,8 @@ class Cl36Kfeld():
         # stopped/negative muon yield
         self.k_neg = self.fC * self.fD * self.fstar
         #self.delk_neg = self.fC * self.fD * self.delfstar
-        p_mu_tot = muon.P_mu_total(z=0, h=0, nuc=self)[0] 
-        self.P0 = P36_REF_ST - p_mu_tot
+        p_mu_tot = muon.P_mu_total(z=0, n=self, h=0)
+        self.P0 = self.P36_slhl - p_mu_tot
     
     def relative_error(self, concentration):
         """

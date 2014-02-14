@@ -33,7 +33,7 @@ def phi_sl(z):
     phi_sl : ndarray
              sea level muon flux
     """
-    return 2 * np.pi * phi_vert_sl(z) / (n(z) + 1)
+    return 2 * np.pi * phi_vert_sl(z) / (n_exponent(z) + 1)
 
 
 def p_fast_sl(z, n):
@@ -89,11 +89,11 @@ def phi_vert_sl(z):
     return flux
 
 
-def n(z):
+def n_exponent(z):
     """
     Exponent for the muon flux at an angle
-    Takes z (g/cm2)
-    Heisinger et al. 2002a eq. 4
+    Takes lithospheric depth z (g/cm**2)
+    Heisinger et al. 2002a eq. 4 converted to units of g/cm**2
     """
     return 3.21 - 0.297 * np.log((z / 100.0) + 42) + 1.21e-5 * z
 
@@ -227,14 +227,14 @@ def LZ(z):
     return atten_len
 
 
-def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
+def P_mu_total(z, n, h=0.0, is_alt=True, full_data=False):
     """
     Total production rate from muons
 
     Takes:
     z: a scalar or vector of sample depths in g/cm2
+    n: a nuclide object containing nuclide specific information
     h: altitude in meters or the atmospheric pressure in hPa at surface, scalar
-    nuc: a nuclide object containing nuclide specific information
     is_alt (optional): makes h be treated as an altitude in meters
 
     Returns the total production rate from muons in atoms / g / yr
@@ -278,7 +278,8 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
 
     # indexes of the sorted, then reversed array
     rev_sort_idxs = np.argsort(z)[::-1]
-    # reordering of z to be in increasing order
+    
+    # reorder z to be in increasing order
     zsorted = z[rev_sort_idxs]
     
     # start with the flux below 2e5 g / cm2, assumed to be constant
@@ -301,7 +302,7 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
         prev_phi_v = phi_v[idx]
         prev_z = zi
 
-    nofz = n(z + deltaH)  # exponent for total depth (atmosphere + rock)
+    nofz = n_exponent(z + deltaH)  # exponent for total depth (atmosphere + rock)
     # d(n(z))/dz
     dndz = (-0.297 / 100.0) / ((z + deltaH) / 100.0 + 42) + 1.21e-5
 
@@ -316,8 +317,8 @@ def P_mu_total(z, h, nuc, is_alt=True, full_data=False):
     R *= SEC_PER_YEAR  # convert to negative muons/g/yr
 
     # get nuclide production rates
-    (P_fast, Beta, Ebar) = p_fast(z, phi, nuc)  # for fast muons
-    P_neg = R * nuc.k_neg  # and negative muons
+    (P_fast, Beta, Ebar) = p_fast(z, phi, n)  # for fast muons
+    P_neg = R * n.k_neg  # and negative muons
     P_mu_tot = P_fast + P_neg  # total production from muons, atoms/g/yr
 
     if not full_data:

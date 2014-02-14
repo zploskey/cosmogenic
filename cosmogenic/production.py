@@ -15,10 +15,12 @@ from cosmogenic import scaling as scal
 from cosmogenic import util
 
 LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
-LAMBDA_fast = 4320.0 # after Heisinger 2002
+
+DEFAULT_ALT = 0.0  # sea level
+DEFAULT_LAT = 75.0 # high latitude
 
 
-def P_sp(z, n, scaling=None, alt=0, lat=75):
+def P_sp(z, n, scaling=None, alt=DEFAULT_ALT, lat=DEFAULT_LAT):
     """
     Returns production rate due to spallation reactions (atoms/g/yr)
 
@@ -55,7 +57,7 @@ def P_sp(z, n, scaling=None, alt=0, lat=75):
     return f_scaling * n.P0 * np.exp(-z / LAMBDA_h)
 
 
-def P_tot(z, alt, lat, n, scaling=None):
+def P_tot(z, n, scaling=None, alt=DEFAULT_ALT, lat=DEFAULT_LAT):
     """
     Total production rate of nuclide n in atoms / g of material / year
    
@@ -80,7 +82,10 @@ def P_tot(z, alt, lat, n, scaling=None):
     p : array_like
            total production rate in atoms/g/year
     """
-    return P_sp(z, n, scaling, alt, lat) + muon.P_mu_total(z, alt, n)
+    production_rate = P_sp(z=z, n=n, scaling=scaling, alt=alt, lat=lat)
+    production_rate += muon.P_mu_total(z=z, n=n, h=alt)
+    
+    return production_rate
 
 
 def interpolate_P_tot(max_depth, npts, alt, lat, n, scaling='stone'):
@@ -106,6 +111,7 @@ def interpolate_P_tot(max_depth, npts, alt, lat, n, scaling='stone'):
     prod_rates = P_tot(zs, alt, lat, n, scaling)
     p = ProductionSpline(zs, prod_rates)
     return p, zs, prod_rates
+
 
 class ProductionSpline(InterpolatedUnivariateSpline):
     """

@@ -4,8 +4,8 @@ import unittest
 
 import numpy as np
 
-import cosmogenic.muon as muon
-import cosmogenic.nuclide as nuclide
+from cosmogenic import muon
+from cosmogenic import nuclide
 from cosmogenic.tests.TestBase import TestBase
 
 class TestMuon(TestBase):
@@ -18,12 +18,12 @@ class TestMuon(TestBase):
     def test_phi_sl(self):
         res = muon.phi_sl(self.z)
         self.assertTrue(res.size == self.z.size)
-        self.decreases_with_depth(res)
+        self.monotonically_decreasing(res)
 
     def test_P_mu_total(self):
-        res = muon.P_mu_total(self.z, self.alt, self.n)
+        res = muon.P_mu_total(z=self.z, n=self.n, h=self.alt)
         self.assertTrue(res.size == self.z.size)
-        self.decreases_with_depth(res)
+        self.monotonically_decreasing(res)
 
 if __name__ == "__main__":
     unittest.main()
