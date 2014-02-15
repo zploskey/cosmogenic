@@ -12,7 +12,7 @@ import scipy.interpolate
 
 from cosmogenic import scaling
 
-SEC_PER_YEAR = 3.15576 * 10 ** 7  # seconds per year
+SEC_PER_YEAR = 3.15576e7  # seconds per year
 ALPHA = 0.75  # empirical constant from Heisinger
 SEA_LEVEL_PRESSURE = 1013.25  # hPa
 F_NEGMU = 1 / (1.268 + 1)  # fraction of negative muons (from Heisinger 2002)
