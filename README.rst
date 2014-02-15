@@ -10,7 +10,7 @@ This package contains:
     Muon production is modeled after Heisinger (2002a,b) with some modified constants.
 *   Scaling functions to scale production rates to a site latitude and altitude using the Lal/Stone scaling scheme (Stone 2000). More scaling schemes and production pathways are planned to be implemented in the future.
 *   Functions to integrate the production rate functions over time in different exposure, erosion, and burial scenarios.     It provides the tools to model and predict cosmogenic nuclide concentrations in surface samples or depth profiles given a specific erosion history.
-*   Tools to invert cosmogenic nuclide data for model parameters of your choice using the Neighborhood Algorithm (Sambridge 1999a,b).
+*   Tools to invert cosmogenic nuclide data for model parameters of your choice using the Neighborhood Algorithm (Sambridge 1999a).
     The Neighborhood Algorithm is completely general, and can be used to invert for the parameters of any model callable from Python.
     The user can write a Python misfit function to determine the goodness of fit to the data for a set of model parameters, and passes this to the library to perform the inversion.
 
@@ -33,7 +33,7 @@ Modules
 * production:    spallation and total production rate functions
 * scaling:       functions for scaling cosmogenic nuclide production rates
 * sim:           geomorphic and exposure models
-* na:            Cython implementation of the neighborhood algorithm
+* na:            Implementation of the neighborhood algorithm search phase
 * nuclide:       specific nuclides / target material models
 * util:          utility functions
 
@@ -53,14 +53,6 @@ http://www.scipy.org/install.html
 
 The simplest way to get a working development system is to install Enthought Canopy or Anaconda from Continuum Analytics.
 On Linux systems you may want to install the dependencies using your distribution's package manager.
-The author prefers to install development headers and build the package using pip inside a virtualenv.
-This can be accomplished by running "pip install -r pip-requirements" in the project root directory.
-
-Until we begin to produce official release tarballs, you will need Cython and a working C compiler to build this project. Testing has been done using GCC.
-
-To build, execute the following commands::
-
-    $ python setup.py build_ext --inplace
 
 
 Then install with either::
