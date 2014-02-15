@@ -3,6 +3,9 @@
 # C extensions
 *.so
 
+# temporary backup files
+*~
+
 # Packages
 *.egg
 *.egg-info
