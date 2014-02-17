@@ -17,7 +17,8 @@ ALPHA = 0.75  # empirical constant from Heisinger
 SEA_LEVEL_PRESSURE = 1013.25  # hPa
 F_NEGMU = 1 / (1.268 + 1)  # fraction of negative muons (from Heisinger 2002)
 A_GRAVITY = 9.80665  # standard gravity
-
+LIMIT = 2e5  # g cm-2, upper limit of muon flux integration
+MAX_RANGE = 1e8  # g cm-2, maximum value of muon range
 
 def phi_sl(z):
     """
@@ -188,31 +189,61 @@ def Rv0(z):
 
 # PRODUCTION FROM NEGATIVE MUONS
 
+def interpolate_momentum_range():
+    """
+    Interpolate muon momentum (MeV/c) as a function of range in g cm-2.
+    
+    Uses data from:
+    
+    Groom, D.E., Mokhov, N.V., and Striganov, S.I., 2001.
+    Muon stopping power and range tables 10 MeV - 100 TeV.
+    Atomic data and nuclear data tables, volume 78,
+    number 2, pp. 183-356.
+    """
 
-# GENERAL MUONS
-# Groom, D.E., Mokhov, N.V., and Striganov, S.I., 2001.
-# Muon stopping power and range tables 10 MeV - 100 TeV.
-# Atomic data and nuclear data tables 78, pp. 183-356.
-momentums = np.array([47.04, 56.16, 68.02, 85.1, 100, 152.7, 176.4, 221.8,
-                      286.8, 391.7, 494.5, 899.5, 1101, 1502, 2103, 3104, 4104,
-                      8105, 10110, 14110, 20110, 30110, 40110, 80110, 100100,
-                      140100, 200100, 300100, 400100, 800100])
-ranges = np.array([0.8516, 1.542, 2.866, 5.70, 9.15, 26.76, 36.96, 58.79, 93.32,
-                   152.4, 211.5, 441.8, 553.4, 771.2, 1088, 1599, 2095, 3998,
-                   4920, 6724, 9360, 13620, 17760, 33430, 40840, 54950, 74590,
-                   104000, 130200, 212900])
-max_range = ranges[-1]
-# interpolate the muon momentum and range relationship
-LofZ = sp.interpolate.UnivariateSpline(ranges, momentums)
+    momentum_data = np.array([47.04, 56.16, 68.02, 85.1, 100, 152.7, 176.4, 221.8,
+                        286.8, 391.7, 494.5, 899.5, 1101, 1502, 2103, 3104, 4104,
+                        8105, 10110, 14110, 20110, 30110, 40110, 80110, 100100,
+                        140100, 200100, 300100, 400100, 800100,
+                        2.453e5,
+                        2.990e5,
+                        3.616e5,
+                        4.384e5,
+                        4.957e5,
+                        6.400e5,
+                        6.877e5,
+                        7.603e5,
+                        8.379e5,
+                        9.264e5,
+                        9.894e5,
+                        1.141e6,
+                        1.189e6])
+
+    range_data = np.array([0.8516, 1.542, 2.866, 5.70, 9.15, 26.76, 36.96, 58.79, 93.32,
+                    152.4, 211.5, 441.8, 553.4, 771.2, 1088, 1599, 2095, 3998,
+                    4920, 6724, 9360, 13620, 17760, 33430, 40840, 54950, 74590,
+                    104000, 130200, 212900,
+                    1e6,
+                    1.4e6,
+                    2e6,
+                    3e6,
+                    4e6,
+                    8e6,
+                    1e7,
+                    1.4e7,
+                    2e7,
+                    3e7,
+                    4e7,
+                    8e7,
+                    1e8])
+
+    logp = sp.interpolate.interp1d(np.log(range_data), np.log(momentum_data))
+    momentum_function = lambda z: np.exp(logp(np.log(z)))
+    
+    return momentum_function
 
 
-def LZ_interp(z):
-    zin = np.atleast_1d(z).copy()
-    out = np.empty_like(zin)
-    bad_idxs = zin > np.log(max_range)
-    zin[bad_idxs] = 1.0
-    out = LofZ(zin)
-    return out
+momentum = interpolate_momentum_range()
 
 
 def LZ(z):
@@ -221,10 +252,13 @@ def LZ(z):
 
     From Heisinger 2002b, p. 365.
     """
-    z = np.atleast_1d(z)
-    P_MeVc = LZ_interp(z)
+    zin = np.atleast_1d(z).astype(np.double)
+    toolow_idxs = zin < 1.0
+    zin[toolow_idxs] = 1.0
+    zin[zin > MAX_RANGE] = np.nan
+    P_MeVc = momentum(zin)
     atten_len = 263.0 + 150.0 * (P_MeVc / 1000.0)
-    return atten_len
+    return atten_len if zin.size > 1 else atten_len[0]
 
 
 def P_mu_total(z, n, h=0.0, is_alt=True, full_data=False):
@@ -239,8 +273,7 @@ def P_mu_total(z, n, h=0.0, is_alt=True, full_data=False):
 
     Returns the total production rate from muons in atoms / g / yr
     """
-    z = np.atleast_1d(z)
-    z = z.astype(np.float64)
+    z = np.atleast_1d(z).astype(np.double)
     # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
         h = scaling.alt_to_p(h)
@@ -271,7 +304,6 @@ def P_mu_total(z, n, h=0.0, is_alt=True, full_data=False):
     # at the sample site
     phi_v = np.zeros_like(z)
     tol = 1e-6  # relative error tolerance
-    lim = 2e5  # limit of our integration
 
     # we want to do the integrals in the order of decreasing depth
     # so we can accumulate the flux as we go up
@@ -285,17 +317,19 @@ def P_mu_total(z, n, h=0.0, is_alt=True, full_data=False):
     # start with the flux below 2e5 g / cm2, assumed to be constant
     a = 258.5 * 100 ** 2.66
     b = 75 * 100 ** 1.66
-    phi_200k = ((a / ((2e5 + 21000.0) * (((2e5 + 1000.0) ** 1.66) + b)))
-            * np.exp(-5.5e-6 * 2e5))
+    phi_200k = ((a / ((LIMIT + 21000.0) * (((LIMIT + 1000.0) ** 1.66) + b)))
+            * np.exp(-5.5e-6 * LIMIT))
     phi_v += phi_200k
     
     # keep track of the vertical flux at the previous depth
     prev_phi_v = phi_200k
-    prev_z = lim
+    prev_z = LIMIT
     for i, zi in enumerate(zsorted):
         idx = rev_sort_idxs[i]
-        if zi > lim:
+
+        if zi > LIMIT:
             continue
+
         phi_v[idx], _ = scipy.integrate.quad(
                     Rv, zi, prev_z, epsrel=tol, epsabs=0)
         phi_v[idx] += prev_phi_v

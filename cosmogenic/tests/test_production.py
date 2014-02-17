@@ -4,12 +4,12 @@ import numpy as np
 
 from cosmogenic import production
 from cosmogenic import nuclide
-from cosmogenic.tests.TestBase import TestBase
+from TestBase import TestBase
 
 class TestProduction(TestBase):
 
     def setUp(self):
-        self.z = np.linspace(0, 1e7, 500)
+        self.z = np.linspace(0, 2.2e5, 500)
         self.n = nuclide.Be10Qtz()
     
     def test_P_sp(self):

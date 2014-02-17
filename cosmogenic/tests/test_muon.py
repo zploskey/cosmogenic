@@ -6,7 +6,7 @@ import numpy as np
 
 from cosmogenic import muon
 from cosmogenic import nuclide
-from cosmogenic.tests.TestBase import TestBase
+from TestBase import TestBase
 
 class TestMuon(TestBase):
 
