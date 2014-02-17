@@ -19,16 +19,12 @@ conf = {
     "description": "Test of NA on measurements of a projectile location",
     "ns": 10,
     "nr": 2,
-#    "n_initial": 500,
+    "n_initial": 500,
     "lo_lim": np.array([-50, 0, -100, 0], dtype=float),
     "hi_lim": np.array([50, 200, 100, 200], dtype=float),
     "d": 4,
-    "ne": 250,
-    "shape": (4, 1),
+    "ne": 1000,
     "m_true": np.array([20.0, 100.0, 0.0, 100.0], dtype=float),
-    # resampling
-    'Nw': 24,
-    'pts_per_walk': 100,
     # for benchmarking
     'seed': 10453,
     'plot': False,
