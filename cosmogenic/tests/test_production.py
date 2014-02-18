@@ -9,7 +9,7 @@ from TestBase import TestBase
 class TestProduction(TestBase):
 
     def setUp(self):
-        self.z = np.linspace(0, 2.2e5, 500)
+        self.z = np.linspace(0, 2e3, 30)
         self.n = nuclide.Be10Qtz()
     
     def test_P_sp(self):

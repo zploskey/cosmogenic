@@ -11,7 +11,7 @@ from TestBase import TestBase
 class TestMuon(TestBase):
 
     def setUp(self):
-        self.z = np.linspace(0, 1.1775e6, 10)
+        self.z = np.linspace(0, 40000.0, 10)
         self.n = nuclide.Be10Qtz()
         self.alt = 0.0
 

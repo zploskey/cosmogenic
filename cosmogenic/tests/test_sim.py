@@ -7,7 +7,7 @@ import numpy as np
 from cosmogenic import sim
 from cosmogenic import nuclide
 from cosmogenic import production as prod
-from TestBase import TestBase
+from .TestBase import TestBase
 
 class TestSim(TestBase):
 
