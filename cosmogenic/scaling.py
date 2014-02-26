@@ -10,6 +10,7 @@ from scipy.interpolate import UnivariateSpline
 
 ELEVATION_LIMIT = 44330.76923076923 
 
+
 def alt_to_p(z):
     """
     Convert elevation z in meters to pressure in hPa.
@@ -30,7 +31,8 @@ def alt_to_p(z):
     
     return Ps * np.exp((-gMoverR / dTdz) * (np.log(Ts) - np.log(Ts - dTdz * z)))
 
-def stone2000_sp(lat, alt=None, P=None, interp='spline'):
+
+def stone2000_sp(lat, alt=None, pressure=None, interp='spline'):
     """
     Inputs:
     lat: sample latitude(s) in degrees, scalar
@@ -40,6 +42,7 @@ def stone2000_sp(lat, alt=None, P=None, interp='spline'):
     If both pressure and altitude are supplied we use pressure. If neither is
     supplied we default to sea level pressure.
     """
+    P = pressure
     if P == None:
         if alt == None:
             P = 1013.25

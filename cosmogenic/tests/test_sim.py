@@ -19,7 +19,7 @@ class TestSim(TestBase):
         self.t_intergl = 85000.0
         self.z = np.linspace(0, 1e4, 3)
         self.n = nuclide.Be10Qtz()
-        self.p = lambda x: prod.P_tot(x, self.n, self.alt, self.lat)
+        self.p = lambda x: prod.P_tot(z=x, n=self.n, alt=self.alt, lat=self.lat)
         self.t_postgl = 10000.0 
         self.pgl_shield = 13.0
         self.n_gl = 3

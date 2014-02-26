@@ -1,5 +1,14 @@
 """
-Cosmogenic nuclide classes to hold important constants
+Cosmogenic nuclide classes to hold important constants.
+
+Nuclides in this class contain reference production rates of the cosmogenic
+nuclide from spallation for each scaling scheme as a dictionary called
+"scaling_p_sp_ref". Production rate values are from Borchers et al. (2014)
+unless otherwise noted.
+
+Reference:
+    Borchers et al. (2014) Geological calibration of spallation production 
+    rates in the CRONUS-Earth Project. Quaternary Geochronology, in press.
 """
 from __future__ import division, print_function, unicode_literals
 
@@ -9,11 +18,11 @@ import math
 from . import muon
 
 ALPHA = 0.75  # constant from Heisinger 2002
-P10_SLHL = 4.49  # Balco 2008 production rate, atoms / g / yr
 P36KFELD_SLHL = 22.5  # atoms / g pure Kfeldspar / yr
 P36K_SLHL = 160.0 # roughly, atoms / g K / yr
 
-class Be10Qtz():
+
+class Be10Qtz(object):
     """
     Data for the radioisotope Beryllium-10
 
@@ -26,9 +35,19 @@ class Be10Qtz():
                 continously exposed and slowly eroding surface in
                 Antarctica.
     """
-
+    
+    # map scaling scheme codes to reference spallation production rates
+    scaling_p_sp_ref = {
+            "Sa":  3.92,
+            "St":  4.01, 
+            "Sf":  4.09,
+            "Lm":  4.00,
+            "De":  3.69,
+            "Du":  3.70,
+            "Li":  4.06,
+        }
+    
     def __init__(self, constants='stone'):
-        self.P10_slhl = P10_SLHL
         self.Natoms = 2.0046e22 # atoms of O / g quartz
         self.LAMBDA = 4.998e-7
         
@@ -57,12 +76,6 @@ class Be10Qtz():
         self.k_neg = self.fC * self.fD * self.fstar
         #self.delk_neg = self.fC * self.fD * self.delfstar
         
-        # Production rate in atoms / g / yr from Stone, adjusted for 07KNSTD ala
-        # Balco's 2008 paper. This number apparently includes production from
-        # fast muons, so I have opted to subtract them here.
-        p_mu_tot = muon.P_mu_total(z=0, n=self, h=0)
-        self.P0 = self.P10_slhl - p_mu_tot
-    
     def relative_error(self, concentration):
         """ Approximate relative error for concentration. """
         return 0.9 * concentration**(-0.29402281)
@@ -77,10 +90,23 @@ class Be10Qtz():
         """
         return concentration * self.relative_error(concentration)
     
-class Al26Qtz():
+
+class Al26Qtz(object):
     """
     Aluminum-26 data
     """
+    
+    # map scaling scheme codes to reference spallation production rates
+    scaling_p_sp_ref = {
+            "Sa":  28.54,
+            "St":  27.93, # sea level high latitude prod'n minus muon
+            "Sf":  28.61,
+            "Lm":  27.93,
+            "De":  26.26,
+            "Du":  26.29,
+            "Li":  28.72,
+        }
+    
     def __init__(self, constants='stone'):
         self.Natoms = 1.0025e22 # atoms Si / g quartz
         self.halflife = 7.17e5 # years
@@ -109,9 +135,6 @@ class Al26Qtz():
         
         self.k_neg = self.fC * self.fD * self.fstar
         # self.delk_neg = self.fC * self.fD * self.delfstar
-        p_mu_tot = muon.P_mu_total(z=0, n=self, h=0)
-        self.R2610 = 6.02 * 1.106 # ratio of Al26 to Be10 production at surface
-        self.P0 = (P10_SLHL * self.R2610) - p_mu_tot
         
     def relative_error(self, concentration):
         """ Approximate fractional error for the concentration.
@@ -127,7 +150,45 @@ class Al26Qtz():
         """ Approximate measurement error for the concentration. """
         return concentration * self.relative_error(concentration)
 
-class Cl36Kfeld():
+
+class Cl36Ca(object):
+    
+    # map scaling scheme codes to reference spallation production rates
+    scaling_p_sp_ref = {
+            "Sa":  56.27,
+            "St":  52.34, # sea level high latitude prod'n minus muon
+            "Sf":  56.61,
+            "Lm":  51.83,
+            "De":  55.90,
+            "Du":  55.27,
+            "Li":  60.66,
+        }
+
+    def __init__(self, constants='stone'):
+        raise NotImplementedError("Cl-36 in Ca is not implemented yet.")
+
+
+class Cl36K(object):
+    """
+    Chlorine-36 production in K (potassium).
+    """
+    
+    # map scaling scheme codes to reference spallation production rates
+    scaling_p_sp_ref = {
+            "Sa":  156.09,
+            "St":  150.72, # sea level high latitude prod'n minus muon
+            "Sf":  153.95,
+            "Lm":  151.64,
+            "De":  128.25,
+            "Du":  128.89,
+            "Li":  142.24,
+        }
+
+    def __init__(self, constants='stone'):
+        raise NotImplementedError("Cl-36 in Ca is not implemented yet.")
+
+
+class Cl36Kfeld(object):
     """
     Data for the radioisotope Chlorine-36 produced in K-feldspar.
     
@@ -145,8 +206,7 @@ class Cl36Kfeld():
         self.fD = 0.8020
         
         if constants == 'heisinger':
-            raise NotImplementedError(
-                    "Heisinger 36-Cl is not yet implemented.")
+            raise NotImplementedError("Heisinger 36-Cl not yet implemented.")
         elif constants == 'stone':
             # John Stone, pers. communication
             self.fstar = 0.0568
@@ -159,8 +219,6 @@ class Cl36Kfeld():
         # stopped/negative muon yield
         self.k_neg = self.fC * self.fD * self.fstar
         #self.delk_neg = self.fC * self.fD * self.delfstar
-        p_mu_tot = muon.P_mu_total(z=0, n=self, h=0)
-        self.P0 = self.P36_slhl - p_mu_tot
     
     def relative_error(self, concentration):
         """
@@ -171,5 +229,10 @@ class Cl36Kfeld():
         return 4.40538328952 * concentration**(-0.32879674)
     
     def measurement_error(self, concentration):
-        """ Approximate measurement error for concentration. """
+        """ Approximate measurement error for concentration. 
+        
+        For now, assumes same statistics as Al-26.
+        """
         return concentration * self.relative_error(concentration)
+
+# TODO: Helium and carbon

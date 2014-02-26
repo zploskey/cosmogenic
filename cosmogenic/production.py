@@ -20,7 +20,7 @@ DEFAULT_ALT = 0.0  # sea level
 DEFAULT_LAT = 75.0 # high latitude
 
 
-def P_sp(z, n, scaling=None, alt=DEFAULT_ALT, lat=DEFAULT_LAT):
+def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, pressure=None):
     """
     Returns production rate due to spallation reactions (atoms/g/yr)
 
@@ -49,15 +49,22 @@ def P_sp(z, n, scaling=None, alt=DEFAULT_ALT, lat=DEFAULT_LAT):
     p_sp : array_like
            production rate from spallation in atoms/g/year
     """
-    if scaling == 'stone':
-        f_scaling = scal.stone2000_sp(lat, alt)
-    else:
+
+    if scaling is None:
         f_scaling = 1.0
-    
-    return f_scaling * n.P0 * np.exp(-z / LAMBDA_h)
+        # we are not scaling, default to the LSD (Sato "Sa") prod. rate
+        scaling = "Sa"
+    elif scaling in ("stone", "St"):
+        f_scaling = scal.stone2000_sp(lat=lat, alt=alt, pressure=pressure)
+        scaling = "St"
+    elif scaling == "Sa":
+        raise NotImplementedError("No Sa scaling yet.")
+   
+    p_sp_ref = n.scaling_p_sp_ref[scaling]
+    return f_scaling * p_sp_ref * np.exp(-z / LAMBDA_h)
 
 
-def P_tot(z, n, scaling=None, alt=DEFAULT_ALT, lat=DEFAULT_LAT):
+def P_tot(z, n, scaling=None, alt=None, lat=None, pressure=None):
     """
     Total production rate of nuclide n in atoms / g of material / year
    
@@ -82,7 +89,8 @@ def P_tot(z, n, scaling=None, alt=DEFAULT_ALT, lat=DEFAULT_LAT):
     p : array_like
            total production rate in atoms/g/year
     """
-    production_rate = P_sp(z=z, n=n, scaling=scaling, alt=alt, lat=lat)
+    production_rate = P_sp(z=z, n=n, scaling=scaling, alt=alt, lat=lat,
+            pressure=pressure)
     production_rate += muon.P_mu_total(z=z, n=n, h=alt)
     
     return production_rate
