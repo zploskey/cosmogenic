@@ -23,10 +23,8 @@ def exposure_age(C, P, nuclide, z0=0.0, erosion_rate=None, z=None):
     nuclide: a cosmogenic nuclide object
     z0: modern depth (g / cm**2)
     erosion_rate (optional): assumed constant rate of erosion (g / cm**2 / yr),
-                             default is no erosion
+                             default is no erosion. Ignored if z is supplied.
     z (optional): Function z(t) that returns depth in cm
-    erosion_rate: (optional) Rate of steady erosion to assume (ignored if z is
-                  supplied.
     """
 
     
@@ -47,10 +45,7 @@ def exposure_age(C, P, nuclide, z0=0.0, erosion_rate=None, z=None):
     upper_age_bound = 7 * np.log(2) / nuclide.LAMBDA
     bounds = (0.0, upper_age_bound)
 
-    res = opt.minimize_scalar(residual, bounds=bounds, method='bounded')
-    if res.success:
-        t = res.x
-        return sim.nexpose(P, nuclide, z, t)
-    else:
-        raise Error("Something went wrong in the inversion")
+    res = opt.minimize_scalar(residual, bracket=bounds) 
+    t = res.x
+    return t, sim.nexpose(P, nuclide, z, t)
 
