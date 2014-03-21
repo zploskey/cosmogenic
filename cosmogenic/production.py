@@ -50,11 +50,12 @@ def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, pressure=None):
            production rate from spallation in atoms/g/year
     """
 
-    if scaling is None:
+    if scaling is None and alt is None and lat is None and pressure is None:
         f_scaling = 1.0
         # we are not scaling, default to the LSD (Sato "Sa") prod. rate
         scaling = "Sa"
-    elif scaling in ("stone", "St"):
+    elif scaling in ("stone", "St", None):
+        # scale with Stone by default for now until LSD scaling is done
         f_scaling = scal.stone2000_sp(lat=lat, alt=alt, pressure=pressure)
         scaling = "St"
     elif scaling == "Sa":
