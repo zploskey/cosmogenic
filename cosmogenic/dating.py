@@ -40,12 +40,12 @@ def exposure_age(C, P, nuclide, z0=0.0, erosion_rate=None, z=None):
         C_model, _ = sim.nexpose(P, nuclide, z, t)
         return np.abs(C - C_model)
     
-    # go out to 7 half lives... this is really pushing it
-    # the sample would be saturated at this age
-    upper_age_bound = 7 * np.log(2) / nuclide.LAMBDA
+    # Go out to 7 half lives + 30%... This should definitely
+    # be beyond saturation.
+    upper_age_bound = 1.3 * (7 * np.log(2) / nuclide.LAMBDA)
     bounds = (0.0, upper_age_bound)
 
-    res = opt.minimize_scalar(residual, bracket=bounds) 
+    res = opt.minimize_scalar(residual, bounds=bounds) 
     t = res.x
     return t, sim.nexpose(P, nuclide, z, t)
 
