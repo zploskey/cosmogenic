@@ -253,7 +253,7 @@ cpdef double Rv(double x, double dH):
 
 
 @cython.boundscheck(False)
-cpdef P_mu_total(z, object n, h=0.0, is_alt=True, full_data=False):
+cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
     """
     Total production rate from muons
 
@@ -265,6 +265,9 @@ cpdef P_mu_total(z, object n, h=0.0, is_alt=True, full_data=False):
 
     Returns the total production rate from muons in atoms / g / yr
     """
+    if h is None:
+        h = 0.0
+    
     cdef:
         np.ndarray zarr = np.atleast_1d(z).astype(np.double)
         long M = zarr.shape[0]

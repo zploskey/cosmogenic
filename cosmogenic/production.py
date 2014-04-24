@@ -20,7 +20,7 @@ DEFAULT_ALT = 0.0  # sea level
 DEFAULT_LAT = 75.0 # high latitude
 
 
-def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, pressure=None):
+def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, s=None, pressure=None):
     """
     Returns production rate due to spallation reactions (atoms/g/yr)
 
@@ -59,13 +59,13 @@ def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, pressure=None):
         f_scaling = scal.stone2000_sp(lat=lat, alt=alt, pressure=pressure)
         scaling = "St"
     elif scaling == "Sa":
-        raise NotImplementedError("No Sa scaling yet.")
+        raise NotImplementedError("No Sato scaling implemented yet.")
    
     p_sp_ref = n.scaling_p_sp_ref[scaling]
     return f_scaling * p_sp_ref * np.exp(-z / LAMBDA_h)
 
 
-def P_tot(z, n, scaling=None, alt=None, lat=None, pressure=None):
+def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
     """
     Total production rate of nuclide n in atoms / g of material / year
    
@@ -97,7 +97,7 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, pressure=None):
     return production_rate
 
 
-def interpolate_P_tot(max_depth, npts, alt, lat, n, scaling='stone'):
+def interpolate_P_tot(max_depth, npts, n=None, scaling=None, alt=None, lat=None, ):
     """
     Interpolates the production rate function using a spline interpolation.
 
@@ -107,17 +107,18 @@ def interpolate_P_tot(max_depth, npts, alt, lat, n, scaling='stone'):
                 maximum depth to interpolate to in g/cm**2
     npts : int
            number of points to use in interpolation
-    alt : float
-          site altitude in meters
-    lat : float
-          site latitude (degrees)
     n : nuclide object
     scaling : string, optional
               If set to "stone", applies Stone 2000 scaling scheme to
               the spallation production rate.
+    alt : float
+          site altitude in meters
+    lat : float
+          site latitude (degrees)
+
     """
     zs = np.unique(np.logspace(0, np.log2(max_depth + 1), npts, base=2)) - 1
-    prod_rates = P_tot(zs, alt, lat, n, scaling)
+    prod_rates = P_tot(zs, n=n, scaling=scaling, alt=alt, lat=lat)
     p = ProductionSpline(zs, prod_rates)
     return p, zs, prod_rates
 
