@@ -97,7 +97,7 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
     return production_rate
 
 
-def interpolate_P_tot(max_depth, npts, n=None, scaling=None, alt=None, lat=None, ):
+def interpolate_P_tot(max_depth, npts, n=None, scaling=None, alt=None, lat=None):
     """
     Interpolates the production rate function using a spline interpolation.
 
