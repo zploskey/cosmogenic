@@ -9,6 +9,8 @@ from Cython.Build import cythonize
 current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.join(current_dir, 'cosmogenic')
 
+numpy_include = numpy.get_include()
+
 setup(
     name="cosmogenic",
     packages=["cosmogenic"],
@@ -31,13 +33,16 @@ setup(
         "numpy (>=1.6)",
         "scipy (>=0.11)",
         "matplotlib (>=1.1)",
-        "ipython (>=0.14)",
         ],
     ext_modules=cythonize([
         Extension(
             "cosmogenic.muon",
             ["cosmogenic/muon.pyx"],
             libraries=["m"],
-            include_dirs=[numpy.get_include()]),
+            include_dirs=[numpy_include]),
+        Extension(
+            "cosmogenic.parma",
+            ["cosmogenic/parma.pyx"],
+            include_dirs=[numpy_include]),
         ])
     )
