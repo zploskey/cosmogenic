@@ -10,7 +10,7 @@ Performs calculations for cosmogenic nuclide production rates from muons.
 from __future__ import division, print_function
 
 import numpy as np
-import numba as nb
+
 import scipy as sp
 import scipy.misc
 import scipy.integrate
