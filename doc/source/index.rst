@@ -1,5 +1,5 @@
 .. Cosmogenic documentation master file, created by
-   sphinx-quickstart on Thu May  2 14:23:45 2013.
+   sphinx-quickstart on Fri May 23 11:32:51 2014.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
