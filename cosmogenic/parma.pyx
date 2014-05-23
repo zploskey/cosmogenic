@@ -1,4 +1,10 @@
 """
+====================================
+PARMA (:mod:`cosmogenic.parma`)
+====================================
+
+.. currentmodule:: cosmogenic.parma
+
 Implementation of PARMA, a set of analytical function fit to PHITS,
 a Monte Carlo simulation of the cosmic ray cascade of particles through
 the atmosphere.

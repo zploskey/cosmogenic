@@ -17,16 +17,16 @@ Reference
 ---------
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
    
-   parma
-   sim
-   datareduction
-   muon 
-   production
-   dating
-   nuclide
-   scaling
+    parma
+    sim
+    datareduction
+    muon 
+    production
+    dating
+    nuclide
+    scaling
 
 Indices and tables
 ==================
