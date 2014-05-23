@@ -1,17 +1,32 @@
-.. Cosmogenic documentation master file, created by
-   sphinx-quickstart on Fri May 23 11:32:51 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Cosmogenic
+==========
 
-Welcome to Cosmogenic's documentation!
-======================================
+:Release: |release|
+:Date:    |today|
 
-Contents:
+Cosmogenic is an open-source software library for modeling the production
+of terrestrial cosmogenic nuclides.
 
 .. toctree::
    :maxdepth: 2
 
+.. toctree::
+   :maxdepth: 1
 
+Reference
+---------
+
+.. toctree::
+   :maxdepth: 1
+   
+   parma
+   sim
+   datareduction
+   muon 
+   production
+   dating
+   nuclide
+   scaling
 
 Indices and tables
 ==================

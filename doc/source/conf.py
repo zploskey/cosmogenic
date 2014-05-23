@@ -166,7 +166,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Cosmogenicdoc'
+htmlhelp_basename = 'cosmogenic'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -209,6 +209,11 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_domain_indices = True
 
+
+# -- Autosummary --
+
+import glob
+autosummary_generate = glob.glob("*.rst")
 
 # -- Options for manual page output --------------------------------------------
 
