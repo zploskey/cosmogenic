@@ -14,7 +14,6 @@ Tatsuhiko Sato, Hiroshi Yasuda, Koji Niita, Akira Endo, and Lembit Sihver.
 (2008) Development of PARMA: PHITS-based Analytical Radiation Model in the
 Atmosphere. Radiation Research, 170(2), 244--259.
 
-    Sato 2008
 """
 from __future__ import division, print_function, unicode_literals
 
@@ -36,17 +35,23 @@ class PrimaryParticle(Particle):
     
     def flux(self, s, d, E):
         """
+        Primary particle flux at depth d in the atmosphere.
+        Sato 2008, eq. 1.
         s: force field potential
         d: atmospheric depth
         E: kinetic energy per nucleon
         """
         a = self.a
-        flux = self.flux_TOA(s, E + a[0]) * (a[1] * np.exp(-a[2] * d) 
+        flux = self.flux_TOA(s, E + a[0] * d) * (a[1] * np.exp(-a[2] * d) 
                                         + (1 - a[1]) * np.exp(-a[3] * d))
         
         return flux
         
     def flux_TOA(self, s, E):
+        """
+        Primary particle flux at the top of the atmosphere.
+        Sato 2008, eq. 2
+        """
         a = self.a
         E_LIS = E + s * self.Z / self.A
         f = self.C(E_LIS) * Beta(E_LIS) ** a[4]
