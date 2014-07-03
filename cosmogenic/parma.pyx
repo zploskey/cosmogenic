@@ -20,18 +20,28 @@ from __future__ import division, print_function, unicode_literals
 cimport numpy as np
 import numpy as np
 
+from scipy.constants import physical_constants as const
+
 
 class Particle(object):
     
-    def __init__(self):
-        pass
-
+    # mass of the particle
+    A = None
+    
+    # atomic number
+    Z = None
+    
 
 class PrimaryParticle(Particle):
+   
+    a = None
     
+    
+    # particle rest mass, MeV
+    Em = None
+
     def __init__(self):
         super(PrimaryParticle, self).__init__()
-        self.a = None
     
     def flux(self, s, d, E):
         """
@@ -53,16 +63,37 @@ class PrimaryParticle(Particle):
         Sato 2008, eq. 2
         """
         a = self.a
+        R = self.R
         E_LIS = E + s * self.Z / self.A
-        f = self.C(E_LIS) * Beta(E_LIS) ** a[4]
+        f = self.C(E_LIS) * self.Beta(E_LIS) ** a[4]
         f /= R(E_LIS) ** a[5]
         f *= (R(E) / R(E_LIS)) ** 2
         return f
 
     def C(self, E):
+        """
+        s-1 m-2 sr-1 GV-1
+        """
         a = self.a
         C = a[6] + a[7] / (1 - np.exp((E - a[8]) / a[9]))
         return C
+
+    def R(self, E):
+        """
+        Partical rigidity in GV, as a function of energy E in MeV/nucleon.
+        Sato 2008, p. 249
+        """
+        R = 0.001
+        R *= np.sqrt((self.A * E) ** 2 + 2 * self.A * self.Em * E) / self.Z
+        return R
+
+    def Beta(self, E):
+        """
+        Speed of particle relative to light.
+        Beta = v / c
+        E: kinetic energy in MeV / nucleon
+        """
+        return np.sqrt(1 - np.sqrt(self.Em  / E))
 
 
 class Proton(PrimaryParticle):
@@ -83,9 +114,12 @@ class Proton(PrimaryParticle):
         2.07,
         108,
         2.3e3])
-    
+
+    A = 1 # mass
     Z = 1
-    
+
+    Em = const['proton mass energy equivalent in MeV'][0]
+
     def __init__(self):
         super(Proton, self).__init__()
 
@@ -107,8 +141,11 @@ class Alpha(PrimaryParticle):
         3.2,
         15.0,
         853])
-        
+    
+    A = 4 
     Z = 2
+    
+    Em = const['alpha particle mass energy equivalent in MeV'][0]
     
     def __init__(self):
         super(Alpha, self).__init__()
@@ -135,14 +172,3 @@ class Muon(Particle):
             raise ValueError("Unknown argument '%s'" % charge)
         
         return u[0] * (np.exp(-u[1] * d) - u[2] * np.exp(-u[3] * d)) + u[4]
-
-
-def R(energy):
-    raise NotImplementedError()
-
-
-def Beta(energy):
-    raise NotImplementedError()
-    
-
-
