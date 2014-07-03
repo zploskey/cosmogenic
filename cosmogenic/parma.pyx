@@ -36,7 +36,6 @@ class PrimaryParticle(Particle):
    
     a = None
     
-    
     # particle rest mass, MeV
     Em = None
 
@@ -54,7 +53,6 @@ class PrimaryParticle(Particle):
         a = self.a
         flux = self.flux_TOA(s, E + a[0] * d) * (a[1] * np.exp(-a[2] * d) 
                                         + (1 - a[1]) * np.exp(-a[3] * d))
-        
         return flux
         
     def flux_TOA(self, s, E):
@@ -117,11 +115,11 @@ class Proton(PrimaryParticle):
 
     A = 1 # mass
     Z = 1
-
     Em = const['proton mass energy equivalent in MeV'][0]
 
     def __init__(self):
         super(Proton, self).__init__()
+
 
 class Alpha(PrimaryParticle):
     a = np.array([
@@ -144,7 +142,6 @@ class Alpha(PrimaryParticle):
     
     A = 4 
     Z = 2
-    
     Em = const['alpha particle mass energy equivalent in MeV'][0]
     
     def __init__(self):
