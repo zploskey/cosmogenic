@@ -42,9 +42,10 @@ class PrimaryParticle(Particle):
     def __init__(self):
         super(PrimaryParticle, self).__init__()
     
-    def flux(self, s, d, E):
+    def flux_pri(self, s, d, E):
         """
         Primary particle flux at depth d in the atmosphere.
+        Units: cm-2 s-1 (MeV/Nucleon)-1
         Sato 2008, eq. 1.
         s: force field potential
         d: atmospheric depth
@@ -59,6 +60,7 @@ class PrimaryParticle(Particle):
         """
         Primary particle flux at the top of the atmosphere.
         Sato 2008, eq. 2
+        Units: cm-2 s-1 (MeV/nucleon)-1
         """
         a = self.a
         R = self.R
@@ -66,6 +68,8 @@ class PrimaryParticle(Particle):
         f = self.C(E_LIS) * self.Beta(E_LIS) ** a[4]
         f /= R(E_LIS) ** a[5]
         f *= (R(E) / R(E_LIS)) ** 2
+        # convert to cm-2 s-1 (MeV/nucleon)-1 from s-1 m-2 sr-1 GV-1
+        f *= 1.675 * np.pi 
         return f
 
     def C(self, E):
@@ -92,6 +96,62 @@ class PrimaryParticle(Particle):
         E: kinetic energy in MeV / nucleon
         """
         return np.sqrt(1 - np.sqrt(self.Em  / E))
+    
+    def f1(self, rc, d):
+        raise NotImplementedError()
+    
+    def f2(self, rc, d):
+        raise NotImplementedError()
+    
+    def f3(self, rc, d):
+        raise NotImplementedError()
+
+    def Phi_N(self, s, rc, d):
+        return self.f1(rc, d) + self.f2(rc, d) * s ** self.f3(rc, d)
+
+    def b(self, i, d):
+        return np.polyval(self.bc[i, ::-1], d)
+
+    def flux_sec(self, s, rc, d, E):
+        PhiN = self.Phi_N(s, rc, d)
+        flux_sec = PhiN * self.b(0, d) * E ** self.b(1, d) / (1 + 
+                self.b(2, d) * E ** self.b(3, d))
+        return flux_sec
+
+    def Ec(self, rc):
+        return (np.sqrt((1000 * rc * self.Z) ** 2 + self.Em ** 2) - self.Em
+                ) / self.A
+
+    def Es(self, rc, d):
+        a = self.a
+        return a[12] * (self.Ec(rc) - a[13] * d)
+
+    def Es1(self, rc, d):
+        a = self.a
+        res = self.Es(rc, d)
+        an = a[14]
+        res[res < an] = an
+        return res
+    
+    def Es2(self, rc, d):
+        a = self.a
+        res = self.Es(rc, d)
+        an = a[15]
+        res[res < an] = an
+        return res
+
+    def flux(self, s, rc, d, E):
+        """
+        Total flux 
+        """
+        a = self.a
+        flux = self.flux_pri(s, d, E)
+        flux *= (np.tanh(a[10] * (E / self.Es1(rc, d) - 1)) + 1) / 2
+        flux += self.flux_sec(s, rc, d, E) * (
+                np.tanh(a[11] * (1 - E / self.Es2(rc, d)))) / 2
+        
+                
+
 
 
 class Proton(PrimaryParticle):
@@ -112,6 +172,12 @@ class Proton(PrimaryParticle):
         2.07,
         108,
         2.3e3])
+
+    bc = np.array(
+            [[1.26, 0.00323, 4.81e-6, 2.28e-9],
+            [0.438, -5.58e-4, 7.84e-7, -3.87e-10],
+            [1.81e-4, -5.18e-7, 7.59e-10, -3.82e-13],
+            [1.71, 7.16e-4, -9.32e-7, 5.27e-10]])
 
     A = 1 # mass
     Z = 1
@@ -139,11 +205,17 @@ class Alpha(PrimaryParticle):
         3.2,
         15.0,
         853])
-    
+   
+    bc = np.array(
+            [[1.00, 0, 0, 0],
+            [0.881, 0, 0, 0],
+            [1.8e-4, 0, 0, 0],
+            [4.77, 0 , 0, 0]])
+
     A = 4 
     Z = 2
     Em = const['alpha particle mass energy equivalent in MeV'][0]
-    
+
     def __init__(self):
         super(Alpha, self).__init__()
 
