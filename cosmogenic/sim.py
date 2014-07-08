@@ -4,11 +4,9 @@ Simulate geomorphic scenarios along with CN production.
 from __future__ import division, print_function, unicode_literals
 
 import numpy as np
+import scipy.integrate
 
 from cosmogenic import production
-from cosmogenic import muon
-
-import scipy.integrate
 
 def nexpose(P, nuclide, z, t, tol=1e-4):
     """
