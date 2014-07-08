@@ -241,41 +241,6 @@ def fwd_profile_slow(z0, z_removed, t, n, h, lat):
     return N
 
 
-def steady_multiglaciate(model, constraints, bottom_depth_error, z_vs_t=False):
-    """
-    Model should have: [erosion_rate, t_gl, t_int]
-    in units g / cm^2 / yr, yr and yr respectively
-    This is currently unused and might take some cleanup
-    *UNTESTED*!
-    """
-    con = constraints
-    eros, t_gl, t_int = tuple(model.tolist())
-    t_cycle = t_gl + t_int
-    eros_depth = con['eros_rate'] * t_cycle
-    z_cur = con['sample_depths'].copy()
-    bottom_idx = np.argmin(z_cur)
-    t_beg = con['t_postgl']
-    t_end = 0
-    
-    conc = np.zeros(z_cur.size)
-    while True:
-        p = production.P_tot(z_cur, con['sample_h'], con['lat'],
-                             con['nuclide'])
-        added_conc = expose(z_cur, t_beg, t_end, con['nuclide'], 
-                            con['sample_h'], con['lat'])
-        conc += added_conc
-
-        if added_conc[bottom_idx] < bottom_depth_error:
-            break
-        t_beg += t_cycle
-        t_end += t_cycle
-        dz += eros_depth
-    
-#    if z_vs_t:
-#        return (conc_true, t_true, z_true)
-#    else:
-    return conc
-
 def rand_erosion_hist(avg, sigma, n):
     """
     Generates a sequence of n numbers randomly distributed about avg_dz and
