@@ -15,8 +15,6 @@ from __future__ import division, print_function, unicode_literals
 import numpy as np
 import math
 
-from . import muon
-
 ALPHA = 0.75  # constant from Heisinger 2002
 P36KFELD_SLHL = 22.5  # atoms / g pure Kfeldspar / yr
 P36K_SLHL = 160.0 # roughly, atoms / g K / yr
