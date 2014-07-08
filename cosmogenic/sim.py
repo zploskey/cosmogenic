@@ -8,6 +8,7 @@ import scipy.integrate
 
 from cosmogenic import production
 
+
 def nexpose(P, nuclide, z, t, tol=1e-4):
     """
     Calculate concentrations for an arbitrary depth history z(t).
@@ -205,6 +206,7 @@ def fwd_profile(z0, z_removed, t, n, p):
         
     return N
 
+
 def fwd_profile_slow(z0, z_removed, t, n, h, lat):
     """
     Calculates the nuclide concentration profile resulting from repeated
@@ -245,6 +247,7 @@ def rand_erosion_hist(avg, sigma, n):
     standard deviation approximately equal to sigma.
     """
     return np.random.normal(avg, sigma, n)
+
 
 def steady_erosion(P, z0, eros, nuc, T, T_stop=0):
     
