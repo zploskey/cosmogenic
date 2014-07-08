@@ -91,11 +91,11 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
     # add the atoms created as we go back in time
     # recent interglacial first
     conc = simple_expose(z + postgl_shielding, t_postgl, n, p) 
-    z_cur = z.copy()    # start at current depths
-    t_begint = t_postgl # the time when the current interglacial began
-    t_endint = 0.0      # time (now) when current interglacial ended
+    z_cur = z.copy()  # start at current depths
+    t_begint = t_postgl  # the time when the current interglacial began
+    t_endint = 0.0  # time (now) when current interglacial ended
     for i in range(n_gl):
-        z_cur += dz[i] # go back to depth and time before glacial erosion
+        z_cur += dz[i]  # go back to depth and time before glacial erosion
         t_endint = t_begint + t_gl[i]
         t_begint = t_endint + t_intergl[i]
         conc += expose(z_cur, t_begint, t_endint, n, p)
@@ -192,8 +192,8 @@ def fwd_profile(z0, z_removed, t, n, p):
     n: nuclide object    
     p: production rate function of depth in g/cm2
     """
-    L = n.LAMBDA # decay constant
-    N = np.zeros(z0.size) # nuclide concentration
+    L = n.LAMBDA  # decay constant
+    N = np.zeros(z0.size)  # nuclide concentration
     t_beg = t[2::2]
     t_end = t[1::2]
 
