@@ -243,8 +243,8 @@ def fwd_profile_slow(z0, z_removed, t, n, h, lat):
 
 def rand_erosion_hist(avg, sigma, n):
     """
-    Generates a sequence of n numbers randomly distributed about avg_dz and
-    standard deviation approximately equal to sigma.
+    Generates a sequence of n numbers randomly distributed about avg and
+    standard deviation sigma.
     """
     return np.random.normal(avg, sigma, n)
 
