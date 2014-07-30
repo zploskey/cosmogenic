@@ -2,7 +2,8 @@
 Cosmogenic
 ==========
 
-Cosmogenic is a Python library for modeling in-situ cosmogenic nuclide production and geomorphic processes.
+Cosmogenic is a Python library for modeling in-situ cosmogenic nuclide accumulation during various geomorphic processes.
+
 This package contains:
 
 *   Functions to calculate total nuclide production rates (from reactions due to spallation + muons) for Be-10 and Al-26 in quartz, and Cl-36 in K-feldspar.
@@ -14,8 +15,8 @@ This package contains:
     The Neighborhood Algorithm is completely general, and can be used to invert for the parameters of any model callable from Python.
     The user can write a Python misfit function to determine the goodness of fit to the data for a set of model parameters, and passes this to the library to perform the inversion.
 
-This library is still under heavy development.
-Predictive models of cosmogenic concentrations for a prescribed erosion history are robust.
+This library is under active development.
+Predictive models of cosmogenic concentrations for a prescribed erosion history should be correct.
 Tools in this package for calculating exposure ages are still experimental.
 If you want to calculate exposure ages, you would be best served by using the exposure age calculator at http://hess.ess.washington.edu.
 
@@ -32,16 +33,32 @@ Modules
 * muon:          production from muons
 * production:    spallation and total production rate functions
 * scaling:       functions for scaling cosmogenic nuclide production rates
-* sim:           geomorphic and exposure models
+* sim:           geomorphic history models/simulations
 * na:            Implementation of the neighborhood algorithm search phase
 * nuclide:       specific nuclides / target material models
 * util:          utility functions
 
-Experimental modules still in heavy development:
+Experimental modules still in heavy development or missing functionality:
 
 * dating:        functions for calculating exposure ages
 * datareduction: functions for reducing AMS data
+* parma:         PARMA (Sato et al. 2008) analytical radiation model of the atmosphere 
 
+Dependencies
+============
+
+Cosmogenic requires the following Python packages to be installed.
+
+* NumPy
+* SciPy
+* Matplotlib
+* Cython
+
+Building the documentation requires:
+
+* Sphinx
+
+Building the Cython code requires a C compiler such as gcc, clang or mingw.
 
 Installation
 ============
