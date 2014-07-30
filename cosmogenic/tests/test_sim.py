@@ -50,8 +50,11 @@ class TestSim(TestBase):
         N = sim.nexpose(self.p, self.n, z, ti, tf)
         Nmoretime = sim.nexpose(self.p, self.n, z, ti + 500.0, tf - 500.0)
         Nmoredepth = sim.nexpose(self.p, self.n, lambda t: z(t) + 500.0, ti, tf)
+        Nmorethick = sim.nexpose(self.p, self.n, z, ti, tf,
+                thickness=self.thickness)
         self.assertTrue(N < Nmoretime)
         self.assertTrue(N > Nmoredepth)
+        self.assertTrue(N > Nmorethick) 
 
     def test_multiglaciate(self):
         
