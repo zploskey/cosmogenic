@@ -12,7 +12,7 @@ def N10(R10to9, Mq, Mc, n10b=0.0, unc_R10to9=0.0, unc_Mc=0.0, unc_n10b=0.0):
     N10 = ((R10to9 * Mc * N_A / A_Be) - n10b) / Mq
     
     # standard error propagation
-    # we assume error in quartz measurement is so small as to not matter
+    # we assume error in quartz weighing is so small as to not matter
     A = unc_R10to9 / Mq * (Mc * N_A / A_Be)
     B = unc_Mc / Mq * (R10to9 * N_A / A_Be)
     C = unc_n10b * -1 / Mq
