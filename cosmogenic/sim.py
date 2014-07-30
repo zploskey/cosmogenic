@@ -9,7 +9,7 @@ import scipy.integrate
 from cosmogenic import production
 
 
-def nexpose(P, nuclide, z, t, tol=1e-4):
+def nexpose(P, nuclide, z, T, tol=1e-4, thickness=None):
     """
     Calculate concentrations for an arbitrary depth history z(t).
 
@@ -24,8 +24,12 @@ def nexpose(P, nuclide, z, t, tol=1e-4):
     z : function or callable
         z(t), Depth in g/cm**2 as a function of time t in years. Time decreases
         until the present.
+    T : float
+        exposure time (years)
     tol : float
           error tolerance for the integration
+    thickness : float (optional)
+        sample thickness in g/cm**2
 
     Returns
     -------
@@ -38,7 +42,12 @@ def nexpose(P, nuclide, z, t, tol=1e-4):
     def p(t):
         return P(z(t)) * np.exp(-nuclide.LAMBDA * t)
 
-    res = scipy.integrate.quad(p, 0.0, t, epsrel=tol)
+    if thickness is None:
+        res = scipy.integrate.quad(p, 0, T, epsrel=tol)
+    else:
+        bottom_z = lambda t: z(t) + thickness
+        res = scipy.integrate.dblquad(p, 0, T, z, bottom_z, epsrel=tol) 
+        
     C = res[0]
     err = res[1]
     return C, err

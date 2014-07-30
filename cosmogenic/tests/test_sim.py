@@ -23,6 +23,7 @@ class TestSim(TestBase):
         self.t_postgl = 10000.0 
         self.pgl_shield = 13.0
         self.n_gl = 3
+        self.thickness = 10  # g/cm**2, equivalent to ~4 cm of rock
 
     def test_simple_expose(self):
         N = sim.simple_expose(self.z, self.t_postgl, self.n, self.p)
@@ -41,6 +42,16 @@ class TestSim(TestBase):
         Nmoredepth = sim.expose(self.z + 500.0, ti, tf, self.n, self.p)
         self.assertTrue((N < Nmoretime).all())
         self.assertTrue((N > Nmoredepth).all())
+
+    def test_nexpose(self):
+        ti = 95000.0
+        tf = self.t_postgl
+        z = lambda t: 50 + 0.005 * t
+        N = sim.nexpose(self.p, self.n, z, ti, tf)
+        Nmoretime = sim.nexpose(self.p, self.n, z, ti + 500.0, tf - 500.0)
+        Nmoredepth = sim.nexpose(self.p, self.n, lambda t: z(t) + 500.0, ti, tf)
+        self.assertTrue(N < Nmoretime)
+        self.assertTrue(N > Nmoredepth)
 
     def test_multiglaciate(self):
         
