@@ -214,24 +214,24 @@ class Cl36Kfeld(object):
             self.sigma190 = self.sigma0 * 190 ** ALPHA
         else:
             raise Exception('Unknown constants: %s' % constants)
-        
+
         # stopped/negative muon yield
         self.k_neg = self.fC * self.fD * self.fstar
         #self.delk_neg = self.fC * self.fD * self.delfstar
-    
+
     def relative_error(self, concentration):
         """
         Approximate relative error for concentration.
-        
+
         For now, assumes same statistics as Al-26.
         """
         return 4.40538328952 * concentration**(-0.32879674)
-    
+
     def measurement_error(self, concentration):
-        """ Approximate measurement error for concentration. 
-        
+        """ Approximate measurement error for concentration.
+
         For now, assumes same statistics as Al-26.
         """
         return concentration * self.relative_error(concentration)
 
-# TODO: Helium and carbon 
+# TODO: Helium and carbon
