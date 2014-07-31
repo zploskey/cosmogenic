@@ -149,9 +149,6 @@ class PrimaryParticle(Particle):
         flux *= (np.tanh(a[10] * (E / self.Es1(rc, d) - 1)) + 1) / 2
         flux += self.flux_sec(s, rc, d, E) * (
                 np.tanh(a[11] * (1 - E / self.Es2(rc, d)))) / 2
-        
-                
-
 
 
 class Proton(PrimaryParticle):
