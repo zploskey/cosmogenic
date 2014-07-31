@@ -99,6 +99,8 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
 def interpolate_P_tot(max_depth, npts, n=None, scaling=None, alt=None, lat=None):
     """
     Interpolates the production rate function using a spline interpolation.
+    Evaluated points are log base 2 spaced, with more points concentrated near
+    the surface.
 
     Parameters
     ----------

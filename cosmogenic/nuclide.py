@@ -7,7 +7,7 @@ nuclide from spallation for each scaling scheme as a dictionary called
 unless otherwise noted.
 
 Reference:
-    Borchers et al. (2014) Geological calibration of spallation production 
+    Borchers et al. (2014) Geological calibration of spallation production
     rates in the CRONUS-Earth Project. Quaternary Geochronology, in press.
 """
 from __future__ import division, print_function, unicode_literals
@@ -33,22 +33,21 @@ class Be10Qtz(object):
                 continously exposed and slowly eroding surface in
                 Antarctica.
     """
-    
     # map scaling scheme codes to reference spallation production rates
     scaling_p_sp_ref = {
             "Sa":  3.92,
-            "St":  4.01, 
+            "St":  4.01,
             "Sf":  4.09,
             "Lm":  4.00,
             "De":  3.69,
             "Du":  3.70,
             "Li":  4.06,
         }
-    
+
     def __init__(self, constants='stone'):
         self.Natoms = 2.0046e22 # atoms of O / g quartz
         self.LAMBDA = 4.998e-7
-        
+
         # probability factors from Heisinger et al. 2002b
         # for Be-10 production in quartz:
         self.fC = 0.704
@@ -64,36 +63,36 @@ class Be10Qtz(object):
         elif constants == 'stone':
             # John Stone, pers. communication
             self.fstar = 0.0011 # already adjusted for 07KNSTD
-            self.sigma0 = 8.0707e-31 
+            self.sigma0 = 8.0707e-31
             # for consistency calculate what sigma190 should be
             self.sigma190 = self.sigma0 * 190 ** ALPHA
         else:
             raise Exception('Unknown constants: %s' % constants)
-        
+
         # stopped/negative muon yield
         self.k_neg = self.fC * self.fD * self.fstar
         #self.delk_neg = self.fC * self.fD * self.delfstar
-        
+
     def relative_error(self, concentration):
         """ Approximate relative error for concentration. """
         return 0.9 * concentration**(-0.29402281)
-    
+
     def measurement_error(self, concentration):
         """ Approximate measurement error for the concentration.
-        
+
         Approximate measurement error for the concentration given in
         atoms per gram per year. Estimated from a plot from Balco.
-        See balco_relerr_nov2.jpg or 
+        See balco_relerr_nov2.jpg or
         http://cosmognosis.wordpress.com/2010/11/03/exotic-burial-dating-methods
         """
         return concentration * self.relative_error(concentration)
-    
+
 
 class Al26Qtz(object):
     """
     Aluminum-26 data
     """
-    
+
     # map scaling scheme codes to reference spallation production rates
     scaling_p_sp_ref = {
             "Sa":  28.54,
@@ -104,16 +103,16 @@ class Al26Qtz(object):
             "Du":  26.29,
             "Li":  28.72,
         }
-    
+
     def __init__(self, constants='stone'):
         self.Natoms = 1.0025e22 # atoms Si / g quartz
         self.halflife = 7.17e5 # years
         self.LAMBDA = np.log(2) / 7.17e5 # years ** -1
 
         # modifying factors from Heisinger 2002b
-        self.fC = 0.296  # chemical compound factor 
+        self.fC = 0.296  # chemical compound factor
         self.fD = 0.6559 # probability that the muon does not decay
-        
+
         if constants == 'heisinger':
             self.fstar = 0.022 # probability to emit Al-26
             self.delfstar = 0.002
@@ -126,31 +125,33 @@ class Al26Qtz(object):
         elif constants == 'stone':
             # from second round NSF proposal, John Ston pers. comm.
             self.fstar = 0.0084 # probability to emit Al-26
-            self.sigma0 =  13.6e-30 # cm**2, 1 microbarn = 1e-30 cm**2
+            self.sigma0 = 13.6e-30 # cm**2, 1 microbarn = 1e-30 cm**2
             self.sigma190 = self.sigma0 * 190 ** ALPHA
         else:
             raise Exception('Unknown constants: %s' % constants)
-        
+
         self.k_neg = self.fC * self.fD * self.fstar
         # self.delk_neg = self.fC * self.fD * self.delfstar
-        
+
     def relative_error(self, concentration):
         """ Approximate fractional error for the concentration.
-        
+
         Approximate measurement error for the concentration given in
         atoms per gram per year. Estimated from a plot from Balco.
-        See balco_relerr_nov2.jpg or 
+        See balco_relerr_nov2.jpg or
         http://cosmognosis.wordpress.com/2010/11/03/exotic-burial-dating-methods
         """
         return 4.40538328952 * concentration**(-0.32879674)
-    
+
     def measurement_error(self, concentration):
         """ Approximate measurement error for the concentration. """
         return concentration * self.relative_error(concentration)
 
 
 class Cl36Ca(object):
-    
+    """
+    Chlorine-36 in calcium.
+    """
     # map scaling scheme codes to reference spallation production rates
     scaling_p_sp_ref = {
             "Sa":  56.27,
@@ -170,7 +171,7 @@ class Cl36K(object):
     """
     Chlorine-36 production in K (potassium).
     """
-    
+
     # map scaling scheme codes to reference spallation production rates
     scaling_p_sp_ref = {
             "Sa":  156.09,
@@ -189,20 +190,20 @@ class Cl36K(object):
 class Cl36Kfeld(object):
     """
     Data for the radioisotope Chlorine-36 produced in K-feldspar.
-    
+
     This can be used to predict the production rate in pure K-feldspar.
     """
 
     def __init__(self, constants='stone'):
         self.Natoms = 2.164e21 # atoms K / g Kfeldspar
         self.LAMBDA = math.log(2) / 3.01e5 # decay constant, 1/yr
-        
+
         self.P36_slhl = P36KFELD_SLHL
-        
-        # probability factors 
+
+        # probability factors
         self.fC = 0.12
         self.fD = 0.8020
-        
+
         if constants == 'heisinger':
             raise NotImplementedError("Heisinger 36-Cl not yet implemented.")
         elif constants == 'stone':
@@ -233,4 +234,4 @@ class Cl36Kfeld(object):
         """
         return concentration * self.relative_error(concentration)
 
-# TODO: Helium and carbon
+# TODO: Helium and carbon 
