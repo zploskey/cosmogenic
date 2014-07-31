@@ -36,13 +36,13 @@ class Be10Qtz(object):
     """
     # map scaling scheme codes to reference spallation production rates
     scaling_p_sp_ref = {
-        "Sa":  3.92,
-        "St":  4.01,
-        "Sf":  4.09,
-        "Lm":  4.00,
-        "De":  3.69,
-        "Du":  3.70,
-        "Li":  4.06,
+        "Sa": 3.92,
+        "St": 4.01,
+        "Sf": 4.09,
+        "Lm": 4.00,
+        "De": 3.69,
+        "Du": 3.70,
+        "Li": 4.06,
     }
 
     def __init__(self, constants='stone'):
@@ -97,13 +97,13 @@ class Al26Qtz(object):
 
     # map scaling scheme codes to reference spallation production rates
     scaling_p_sp_ref = {
-        "Sa":  28.54,
-        "St":  27.93,  # sea level high latitude prod'n minus muon
-        "Sf":  28.61,
-        "Lm":  27.93,
-        "De":  26.26,
-        "Du":  26.29,
-        "Li":  28.72,
+        "Sa": 28.54,
+        "St": 27.93,  # sea level high latitude prod'n minus muon
+        "Sf": 28.61,
+        "Lm": 27.93,
+        "De": 26.26,
+        "Du": 26.29,
+        "Li": 28.72,
     }
 
     def __init__(self, constants='stone'):
@@ -157,13 +157,13 @@ class Cl36Ca(object):
     """
     # map scaling scheme codes to reference spallation production rates
     scaling_p_sp_ref = {
-        "Sa":  56.27,
-        "St":  52.34,  # sea level high latitude prod'n minus muon
-        "Sf":  56.61,
-        "Lm":  51.83,
-        "De":  55.90,
-        "Du":  55.27,
-        "Li":  60.66,
+        "Sa": 56.27,
+        "St": 52.34,  # sea level high latitude prod'n minus muon
+        "Sf": 56.61,
+        "Lm": 51.83,
+        "De": 55.90,
+        "Du": 55.27,
+        "Li": 60.66,
     }
 
     def __init__(self, constants='stone'):
@@ -178,11 +178,11 @@ class Cl36K(object):
 
     # map scaling scheme codes to reference spallation production rates
     scaling_p_sp_ref = {
-        "Sa":  156.09,
-        "St":  150.72,  # sea level high latitude prod'n minus muon
-        "De":  128.25,
-        "Du":  128.89,
-        "Li":  142.24,
+        "Sa": 156.09,
+        "St": 150.72,  # sea level high latitude prod'n minus muon
+        "De": 128.25,
+        "Du": 128.89,
+        "Li": 142.24,
     }
 
     def __init__(self, constants='stone'):
