@@ -19,7 +19,8 @@ DEFAULT_ALT = 0.0  # sea level
 DEFAULT_LAT = 75.0  # high latitude
 
 
-def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, s=None, pressure=None):
+def P_sp(z, n, scaling=None, alt=None,
+         lat=None, t=None, s=None, pressure=None):
     """
     Returns production rate due to spallation reactions (atoms/g/yr)
 
@@ -42,7 +43,7 @@ def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, s=None, pressure=None):
           site altitude in meters
     lat : array_like,
           site latitude (in degrees North)
-    
+
     Returns
     -------
     p_sp : array_like
@@ -67,7 +68,7 @@ def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, s=None, pressure=None):
 def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
     """
     Total production rate of nuclide n in atoms / g of material / year
-   
+
     Parameters
     ----------
     z : array_like
@@ -83,7 +84,7 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
     scaling : string, optional
               If "stone" applies Stone 2000 scaling factor to spallation
               production rate.
-    
+
     Returns
     -------
     p : array_like
@@ -96,7 +97,8 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
     return production_rate
 
 
-def interpolate_P_tot(max_depth, npts, n=None, scaling=None, alt=None, lat=None):
+def interpolate_P_tot(
+        max_depth, npts, n=None, scaling=None, alt=None, lat=None):
     """
     Interpolates the production rate function using a spline interpolation.
     Evaluated points are log base 2 spaced, with more points concentrated near
@@ -139,7 +141,7 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         production rate data points
     y : (N,) array_like
         depths in g/cm**2
-        
+
     w : (N,) array_like, optional
     Weights for spline fitting. Must be positive. If None (default),
     weights are all equal.
@@ -151,7 +153,7 @@ class ProductionSpline(InterpolatedUnivariateSpline):
 
     See Also
     --------
-    InterpolatedUnivariateSpline : Superclass in NumPy 
+    InterpolatedUnivariateSpline : Superclass in NumPy
     Notes
     -----
     The number of data points must be larger than the spline degree `k`.
@@ -181,7 +183,7 @@ class ProductionSpline(InterpolatedUnivariateSpline):
           filename   - file to load a saved spline from
         """
 
-        if (x == None) or (y == None) and (filename != None):
+        if (x is None) or (y is None) and (filename is not None):
             self._data = util.unpickle(filename)
         else:
             self._data = dfitpack.fpcurf0(x, y, k, w=w,

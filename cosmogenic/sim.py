@@ -60,14 +60,14 @@ def nexpose(P, nuclide, z, ti, tf=0, tol=1e-4, thickness=None):
 def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
                   postgl_shielding=0):
     """Find the resulting concentration profile for a glacial history and site.
-    
+
     This function predicts the concentration profile for a glacial history. The
     glacial history of the site is described in such a way that the parameters
     are easy to vary for the Monte Carlo simulation--i.e. the times of
     glacial and interglacial periods are in lengths rather than absolute ages.
     Depths of the sample and the depths eroded during each glaciation are both
-    in units of g/cm**2, avoiding tying our results to a rock density. 
-    
+    in units of g/cm**2, avoiding tying our results to a rock density.
+
     Parameters
     ----------
     dz : vector of the depths eroded during each glaciation (g/cm2)
@@ -81,7 +81,7 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
         array of samples depths beneath the modern surface (g/cm**2)
     n : nuclide object
     p : function or callable
-        production rate function p(z), should return a production rate in 
+        production rate function p(z), should return a production rate in
         atoms/g/year at depth z (in g/cm*2).
     n_gl : int, optional
            If supplied, this is the number of glaciations to simulate
@@ -116,14 +116,14 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
 
 def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     """ Returns a tuple of times and depths of a surface sample.
-   
+
     Parameters
     ----------
     gl : array_like
          vector of lengths of each glaciation (yr)
     intergl: vector of lengths of interglacial periods (yr)
     postgl: time since last deglaciation (yr)
-    dz: vector of glacial erosion depths during each glaciation 
+    dz: vector of glacial erosion depths during each glaciation
 
     Returns
     -------
@@ -202,7 +202,7 @@ def fwd_profile(z0, z_removed, t, n, p):
     t: ages of switching between glacial/interglacial (array of times in years)
     exposed to cosmic rays in the recent past (in years). The first element of
     this array should be the exposure time since deglaciation, increasing after.
-    n: nuclide object    
+    n: nuclide object
     p: production rate function of depth in g/cm2
     """
     L = n.LAMBDA  # decay constant
@@ -236,7 +236,7 @@ def fwd_profile_slow(z0, z_removed, t, n, h, lat):
     this array should be the exposure time since deglaciation, increasing after.
     n: the nuclide being produced (nuclide object)
     h: elevation of the site (m)
-    lat: latitude of the site (degrees) 
+    lat: latitude of the site (degrees)
     """
     L = n.LAMBDA
     N = np.zeros(z0.size)

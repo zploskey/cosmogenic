@@ -43,20 +43,20 @@ def stone2000_sp(lat, alt=None, pressure=None, interp='spline'):
     supplied we default to sea level pressure.
     """
     P = pressure
-    if P == None:
-        if alt == None:
+    if P is None:
+        if alt is None:
             P = 1013.25
         else:
             P = alt_to_p(alt)
 
     a = np.array(
-        [31.8518,    34.3699,    40.3153,    42.0983,    56.7733,    69.0720,    71.8733])
+        [31.8518, 34.3699, 40.3153, 42.0983, 56.7733, 69.0720, 71.8733])
     b = np.array(
-        [250.3193,   258.4759,   308.9894,   512.6857,   649.1343,   832.4566,   863.1927])
+        [250.3193, 258.4759, 308.9894, 512.6857, 649.1343, 832.4566, 863.1927])
     c = np.array(
-        [-0.083393,  -0.089807,  -0.106248,  -0.120551,  -0.160859,  -0.199252,  -0.207069])
+        [-0.083393, -0.089807, -0.106248, -0.120551, -0.160859, -0.199252, -0.207069])
     d = np.array(
-        [7.4260e-5,  7.9457e-5,  9.4508e-5,  1.1752e-4,  1.5463e-4,  1.9391e-4,  2.0127e-4])
+        [7.4260e-5, 7.9457e-5, 9.4508e-5, 1.1752e-4, 1.5463e-4, 1.9391e-4, 2.0127e-4])
     e = np.array(
         [-2.2397e-8, -2.3697e-8, -2.8234e-8, -3.8809e-8, -5.0330e-8, -6.3653e-8, -6.6043e-8])
 
@@ -96,7 +96,7 @@ Elsasser et al. 1956 via Dunai's book:
 M = dipole moment [m2 / A]
 mu0 = pi*4e-7 [N / A2]
 c = 299,792,458 [m/s]
-RE = radius of the earth: 
+RE = radius of the earth:
 lambda = geomagnetic latitude [radians presumably]
 
 cutoff rigidity Rc [V] = M * mu0 * c * cos^4(lambda) / (14 * pi * RE^2)
