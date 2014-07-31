@@ -16,7 +16,9 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+
 class NASampler(object):
+
     """ Samples a parameter space using the Neighborhood Algorithm."""
 
     def __init__(self, fn, ns=10, nr=2, lo_lim=0.0, hi_lim=1.0, d=1, ne=10000,
@@ -134,7 +136,7 @@ class NASampler(object):
 
     def fitting_models(self, tol):
         """Row matrix of models that fit better than tol."""
-        #if tol == None:
+        # if tol == None:
         #    tol = self.tol
         fit_idx = self.misfit < tol
         return (self.m[fit_idx], self.misfit[fit_idx])
@@ -192,12 +194,11 @@ class NASampler(object):
             it += 1
             ns = self.ns
 
-
         end_time = time.time()
         print('End time:', time.asctime(time.localtime(end_time)))
         runtime = end_time - start_time
         print('Inversion took %i minutes and %0.2f seconds.' % (
-                round(runtime / 60), runtime % 60))
+            round(runtime / 60), runtime % 60))
         return True
 
     def generate_random_models(self, n=None):

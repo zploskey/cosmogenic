@@ -13,10 +13,10 @@ from cosmogenic import muon
 from cosmogenic import scaling as scal
 from cosmogenic import util
 
-LAMBDA_h = 160.0 # attenuation length of hadronic component in atm, g / cm2
+LAMBDA_h = 160.0  # attenuation length of hadronic component in atm, g / cm2
 
 DEFAULT_ALT = 0.0  # sea level
-DEFAULT_LAT = 75.0 # high latitude
+DEFAULT_LAT = 75.0  # high latitude
 
 
 def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, s=None, pressure=None):
@@ -59,7 +59,7 @@ def P_sp(z, n, scaling=None, alt=None, lat=None, t=None, s=None, pressure=None):
         scaling = "St"
     elif scaling == "Sa":
         raise NotImplementedError("No Sato scaling implemented yet.")
-   
+
     p_sp_ref = n.scaling_p_sp_ref[scaling]
     return f_scaling * p_sp_ref * np.exp(-z / LAMBDA_h)
 
@@ -90,9 +90,9 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
            total production rate in atoms/g/year
     """
     production_rate = P_sp(z=z, n=n, scaling=scaling, alt=alt, lat=lat,
-            pressure=pressure)
+                           pressure=pressure)
     production_rate += muon.P_mu_total(z=z, n=n, h=alt)
-    
+
     return production_rate
 
 
@@ -125,6 +125,7 @@ def interpolate_P_tot(max_depth, npts, n=None, scaling=None, alt=None, lat=None)
 
 
 class ProductionSpline(InterpolatedUnivariateSpline):
+
     """
     One-dimensional interpolating spline for a given set of data points.
 
@@ -156,8 +157,8 @@ class ProductionSpline(InterpolatedUnivariateSpline):
     The number of data points must be larger than the spline degree `k`.
     """
 
-    def __init__(self, x=None, y=None, w=None, bbox = [None]*2, k=3, s=0, 
-                       filename=None):
+    def __init__(self, x=None, y=None, w=None, bbox=[None] * 2, k=3, s=0,
+                 filename=None):
         """
 
         Parameters
@@ -179,13 +180,13 @@ class ProductionSpline(InterpolatedUnivariateSpline):
                        deviation of y[i].
           filename   - file to load a saved spline from
         """
-        
+
         if (x == None) or (y == None) and (filename != None):
             self._data = util.unpickle(filename)
         else:
-            self._data = dfitpack.fpcurf0(x,y,k,w=w,
-                                      xb=bbox[0],xe=bbox[1],s=s)
-                                    
+            self._data = dfitpack.fpcurf0(x, y, k, w=w,
+                                          xb=bbox[0], xe=bbox[1], s=s)
+
         self._reset_class()
 
     def __call__(self, x, nu=0):
@@ -193,7 +194,7 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         res_arr = np.atleast_1d(res)
         res_arr[res_arr < 0.0] = 0.0
         return res_arr[0] if res_arr.size == 1 else res_arr
-        
+
     def save(self, filename):
         """
         What gets saved is pretty specific to the version of scipy that we are use

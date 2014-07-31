@@ -51,7 +51,7 @@ def nexpose(P, nuclide, z, ti, tf=0, tol=1e-4, thickness=None):
         bottom_z = lambda t: z(t) + thickness
         p2d = lambda z, t: P(z) * np.exp(-nuclide.LAMBDA * t) / thickness
         res = scipy.integrate.dblquad(p2d, tf, ti, z, bottom_z, epsrel=tol)
-        
+
     C = res[0]
     err = res[1]
     return C, err
@@ -87,7 +87,7 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
            If supplied, this is the number of glaciations to simulate
            assuming that t_gl and t_intergl are scalars, not vectors.
     """
-    
+
     z = np.atleast_1d(z)
 
     if n_gl is not None:
@@ -99,10 +99,10 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
     else:
         n_gl = dz.size
         assert dz.size == t_gl.size == t_intergl.size
-   
+
     # add the atoms created as we go back in time
     # recent interglacial first
-    conc = simple_expose(z + postgl_shielding, t_postgl, n, p) 
+    conc = simple_expose(z + postgl_shielding, t_postgl, n, p)
     z_cur = z.copy()  # start at current depths
     t_begint = t_postgl  # the time when the current interglacial began
     t_endint = 0.0  # time (now) when current interglacial ended
@@ -135,16 +135,17 @@ def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
 
     if n_gl is None:
         n_gl = max(gl.size, intergl.size, dz.size)
-    
+
     # pad them all out to be the right size
     gl = gl * np.ones(n_gl)
     intergl = intergl * np.ones(n_gl)
     dz = dz * np.ones(n_gl)
-    
+
     # interleave the two arrays
     tmp = np.column_stack((gl, intergl)).reshape(1, gl.size * 2).flatten()
     t = np.add.accumulate(np.concatenate(([0, postgl], tmp)))
-    tmp = np.column_stack((dz, np.zeros(dz.size))).reshape(1, dz.size * 2).flatten()
+    tmp = np.column_stack((dz, np.zeros(dz.size))).reshape(
+        1, dz.size * 2).flatten()
     z = np.add.accumulate(np.concatenate(([0, 0], tmp)))
     return (t, z)
 
@@ -178,14 +179,14 @@ def simple_expose(z, t_exp, n, p):
     Expose samples at depths z (g/cm**2) for t_exp years, recording nuclide n
     with production rate p (atoms/g/yr).
     """
-    
+
     # Note:
     # We must calculate the production rate at depths z first.
     # Otherwise, there are bizarre bugs when using the p = production.P_tot
     # The test case for this function fails if we don't assign a temporary.
     pofz = p(z)
     N = (pofz / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
-    return N 
+    return N
 
 
 def fwd_profile(z0, z_removed, t, n, p):
@@ -211,12 +212,12 @@ def fwd_profile(z0, z_removed, t, n, p):
 
     # Add nuclides formed postglacially
     N += simple_expose(z0, t[0], n, p)
-    
+
     z_cur = z0.copy()
     for i, dz in enumerate(z_removed):
         z_cur += dz
         N += (p(z_cur) / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
-        
+
     return N
 
 
@@ -244,13 +245,13 @@ def fwd_profile_slow(z0, z_removed, t, n, h, lat):
 
     # Add nuclides formed postglacially
     N += simple_expose_slow(z0, t[0], n, h, lat)
-    
+
     z_cur = z0.copy()
     for i, dz in enumerate(z_removed):
         z_cur += dz
         p = production.P_tot(z_cur, h, lat, n)
         N += (p / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
-        
+
     return N
 
 
@@ -263,7 +264,7 @@ def rand_erosion_hist(avg, sigma, n):
 
 
 def steady_erosion(P, z0, eros, nuc, T, T_stop=0):
-    
+
     def int_eq(t):
         return P(z(t)) * np.exp(-nuc.LAMBDA * t)
 
@@ -273,6 +274,5 @@ def steady_erosion(P, z0, eros, nuc, T, T_stop=0):
         z = lambda t: eros * t + depth
         res, _ = scipy.integrate.quad(int_eq, T_stop, T)
         N[i] = res
-    
+
     return N
-    
