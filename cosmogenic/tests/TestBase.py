@@ -1,5 +1,6 @@
 import unittest
 
+
 class TestBase(unittest.TestCase):
 
     def monotonically_decreasing(self, p):

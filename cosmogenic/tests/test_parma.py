@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from cosmogenic import parma
-from TestBase import TestBase
+from .TestBase import TestBase
 
 
 class TestParma(TestBase):
@@ -14,17 +14,17 @@ class TestParma(TestBase):
 
         # force field potential, MV
         self.s = 1200
-        
+
         # atmospheric depths g/cm2
         self.depths = np.linspace(0, 1000, 20)
 
         # energy in MeV
         self.E = 1000
 
-        self.rc = 1.0 # GV?
-    
+        self.rc = 1.0  # GV?
+
     def test_flux_pri(self):
-        flux_pri  = self.proton.flux_pri(self.s, self.depths, self.E)
+        flux_pri = self.proton.flux_pri(self.s, self.depths, self.E)
         print flux_pri
         self.assertTrue(flux_pri is not None)
 
@@ -33,7 +33,6 @@ class TestParma(TestBase):
         pf = self.proton.flux(self.s, self.rc, self.depths, self.E)
         print pf
         self.assertTrue(pf is not None)
-
 
     @unittest.expectedFailure
     def test_alpha_flux(self):

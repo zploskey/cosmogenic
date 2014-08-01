@@ -4,14 +4,15 @@ import numpy as np
 
 from cosmogenic import production
 from cosmogenic import nuclide
-from TestBase import TestBase
+from .TestBase import TestBase
+
 
 class TestProduction(TestBase):
 
     def setUp(self):
         self.z = np.linspace(0, 2e3, 30)
         self.n = nuclide.Be10Qtz()
-    
+
     def test_P_sp(self):
         pofz = production.P_sp(self.z, self.n)
         self.monotonically_decreasing(pofz)
