@@ -24,24 +24,24 @@ from scipy.constants import physical_constants as const
 
 
 class Particle(object):
-    
+
     # mass of the particle
     A = None
-    
+
     # atomic number
     Z = None
-    
+
 
 class PrimaryParticle(Particle):
-   
+
     a = None
-    
+
     # particle rest mass, MeV
     Em = None
 
     def __init__(self):
         super(PrimaryParticle, self).__init__()
-    
+
     def flux_pri(self, s, d, E):
         """
         Primary particle flux at depth d in the atmosphere.
@@ -52,10 +52,10 @@ class PrimaryParticle(Particle):
         E: kinetic energy per nucleon
         """
         a = self.a
-        flux = self.flux_TOA(s, E + a[0] * d) * (a[1] * np.exp(-a[2] * d) 
-                                        + (1 - a[1]) * np.exp(-a[3] * d))
+        flux = self.flux_TOA(s, E + a[0] * d) * (a[1] * np.exp(
+            -a[2] * d) + (1 - a[1]) * np.exp(-a[3] * d))
         return flux
-        
+
     def flux_TOA(self, s, E):
         """
         Primary particle flux at the top of the atmosphere.
@@ -69,7 +69,7 @@ class PrimaryParticle(Particle):
         f /= R(E_LIS) ** a[5]
         f *= (R(E) / R(E_LIS)) ** 2
         # convert to cm-2 s-1 (MeV/nucleon)-1 from s-1 m-2 sr-1 GV-1
-        f *= 1.675 * np.pi 
+        f *= 1.675 * np.pi
         return f
 
     def C(self, E):
@@ -95,14 +95,14 @@ class PrimaryParticle(Particle):
         Beta = v / c
         E: kinetic energy in MeV / nucleon
         """
-        return np.sqrt(1 - np.sqrt(self.Em  / E))
-    
+        return np.sqrt(1 - np.sqrt(self.Em / E))
+
     def f1(self, rc, d):
         raise NotImplementedError()
-    
+
     def f2(self, rc, d):
         raise NotImplementedError()
-    
+
     def f3(self, rc, d):
         raise NotImplementedError()
 
@@ -114,13 +114,13 @@ class PrimaryParticle(Particle):
 
     def flux_sec(self, s, rc, d, E):
         PhiN = self.Phi_N(s, rc, d)
-        flux_sec = PhiN * self.b(0, d) * E ** self.b(1, d) / (1 + 
-                self.b(2, d) * E ** self.b(3, d))
+        flux_sec = PhiN * self.b(0, d) * E ** self.b(
+            1, d) / (1 + self.b(2, d) * E ** self.b(3, d))
         return flux_sec
 
     def Ec(self, rc):
-        return (np.sqrt((1000 * rc * self.Z) ** 2 + self.Em ** 2) - self.Em
-                ) / self.A
+        num = (np.sqrt((1000 * rc * self.Z) ** 2 + self.Em ** 2) - self.Em
+        return num / self.A
 
     def Es(self, rc, d):
         a = self.a
@@ -132,7 +132,7 @@ class PrimaryParticle(Particle):
         an = a[14]
         res[res < an] = an
         return res
-    
+
     def Es2(self, rc, d):
         a = self.a
         res = self.Es(rc, d)
@@ -142,13 +142,13 @@ class PrimaryParticle(Particle):
 
     def flux(self, s, rc, d, E):
         """
-        Total flux 
+        Total flux
         """
         a = self.a
         flux = self.flux_pri(s, d, E)
         flux *= (np.tanh(a[10] * (E / self.Es1(rc, d) - 1)) + 1) / 2
         flux += self.flux_sec(s, rc, d, E) * (
-                np.tanh(a[11] * (1 - E / self.Es2(rc, d)))) / 2
+            np.tanh(a[11] * (1 - E / self.Es2(rc, d)))) / 2
 
 
 class Proton(PrimaryParticle):
@@ -157,7 +157,7 @@ class Proton(PrimaryParticle):
         0.445,
         0.0101,  # cm2 g-1
         0.396,  # cm2 g-1
-        2.924,  
+        2.924,
         2.708,
         1.27e4,  # s-1 m-2 sr-1 GV-1
         4.83e3,
@@ -171,12 +171,12 @@ class Proton(PrimaryParticle):
         2.3e3])
 
     bc = np.array(
-            [[1.26, 0.00323, 4.81e-6, 2.28e-9],
-            [0.438, -5.58e-4, 7.84e-7, -3.87e-10],
-            [1.81e-4, -5.18e-7, 7.59e-10, -3.82e-13],
-            [1.71, 7.16e-4, -9.32e-7, 5.27e-10]])
+        [[1.26, 0.00323, 4.81e-6, 2.28e-9],
+         [0.438, -5.58e-4, 7.84e-7, -3.87e-10],
+         [1.81e-4, -5.18e-7, 7.59e-10, -3.82e-13],
+         [1.71, 7.16e-4, -9.32e-7, 5.27e-10]])
 
-    A = 1 # mass
+    A = 1  # mass
     Z = 1
     Em = const['proton mass energy equivalent in MeV'][0]
 
@@ -202,28 +202,29 @@ class Alpha(PrimaryParticle):
         3.2,
         15.0,
         853])
-   
-    bc = np.array(
-            [[1.00, 0, 0, 0],
-            [0.881, 0, 0, 0],
-            [1.8e-4, 0, 0, 0],
-            [4.77, 0 , 0, 0]])
 
-    A = 4 
+    bc = np.array(
+        [[1.00, 0, 0, 0],
+         [0.881, 0, 0, 0],
+         [1.8e-4, 0, 0, 0],
+         [4.77, 0, 0, 0]])
+
+    A = 4
     Z = 2
     Em = const['alpha particle mass energy equivalent in MeV'][0]
 
     def __init__(self):
         super(Alpha, self).__init__()
 
+
 class Muon(Particle):
-    
+
     u_pmu = np.array([6.26e9, 0.00343, 1.01, 0.00418, 3.75e8])
     u_nmu = np.array([5.82e9, 0.00362, 1.02, 0.00451, 3.20e8])
 
     def __init__(self):
         super(Muon, self).__init__()
-    
+
     def flux(self, d, charge='-'):
         """
         Negative or positive muon flux at atmospheric depth d.
@@ -232,9 +233,9 @@ class Muon(Particle):
         """
         if charge == '-':
             u = self.u_nmu
-        elif charge == '+': 
+        elif charge == '+':
             u = self.u_pmu
         else:
             raise ValueError("Unknown argument '%s'" % charge)
-        
+
         return u[0] * (np.exp(-u[1] * d) - u[2] * np.exp(-u[3] * d)) + u[4]

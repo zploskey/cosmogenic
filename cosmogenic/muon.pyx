@@ -1,8 +1,8 @@
 #!python
-#cython: cdivision=True
-#cython: wraparound=False
-#cython: overflowcheck=False
-#cython: profile=False
+# cython: cdivision=True
+# cython: wraparound=False
+# cython: overflowcheck=False
+# cython: profile=False
 """
 Performs calculations for cosmogenic nuclide production rates from muons.
 """
@@ -55,7 +55,7 @@ cpdef phi_sl(z):
 cpdef p_fast_sl(z, n):
     """
     Heisinger 2002a eq 14, production rate of nuclides by fast muons @ sea level
-    
+
     Parameters
     ----------
     z : array_like, depth [g/cm**2]
@@ -178,7 +178,7 @@ cdef double Rv0(double z):
     level and high latitude for a depth (z) in g/cm2.
     in muons/g/s/sr
     """
-    
+
     if z < 200000.0:
         a = exp(-5.5e-6 * z)
         b = z + 21000.0
@@ -187,7 +187,7 @@ cdef double Rv0(double z):
         dbdz = 1.0
         dcdz = 1.66 * (z + 1000.0) ** 0.66
         stop_rate = (-5.401e7 * (b * c * dadz - a * (c * dbdz + b * dcdz))
-                / (b ** 2.0 * c ** 2.0))
+                     / (b ** 2.0 * c ** 2.0))
     else:
         f = (121100.0 / z) ** 2.0
         g = exp(-z / 121100.0)
@@ -202,9 +202,9 @@ cdef double momentum(double z):
     """
     Analytical function for muon momentum as a function of range were
     fit to Groom 2001 data (see calcs/fitgroom.ipynb).
-    
+
     Calculates momentum (MeV/c) as a function of muon range (g/cm-2).
-    
+
     Groom, D.E., Mokhov, N.V., and Striganov, S.I., 2001.
     Muon stopping power and range tables 10 MeV - 100 TeV.
     Atomic data and nuclear data tables, volume 78,
@@ -219,9 +219,9 @@ cdef double momentum(double z):
 
     if z < 1.0:
         z = 1.0
-    
+
     lz = log(z)
-    
+
     if z < 5.7:
         # fitted slope and intercept in log-log space
         slope = 0.31183384474750259
@@ -232,7 +232,7 @@ cdef double momentum(double z):
         b = 0.01506720229624511
         c = 4.2081356458976158
         mom = exp(a * (lz + b) ** 2.0 + c)
-    
+
     return mom
 
 
@@ -244,7 +244,7 @@ cdef double LZ(double z):
     """
     cpdef double mom = momentum(z)
     cpdef double atten_len = 263.0 + (150.0 / 1000.0) * mom
-    
+
     return atten_len
 
 
@@ -267,12 +267,12 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
     """
     if h is None:
         h = 0.0
-    
+
     cdef:
         np.ndarray zarr = np.atleast_1d(z).astype(np.double)
         long M = zarr.shape[0]
         long i
-    
+
     # if h is an altitude instead of pressure, convert to pressure
     if is_alt:
         h = scaling.alt_to_p(h)
@@ -287,19 +287,19 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
         np.ndarray[double] R_v0 = np.empty_like(zarr)
         np.ndarray[double] L = np.empty_like(zarr)
         np.ndarray[double] R_v = np.empty_like(zarr)
-    
+
     for i in range(M):
         R_v0[i] = Rv0(zarr[i])
 
         # Adjust range spectrum of vertically traveling muons for elevation
         L[i] = LZ(zarr[i])  # saved for full data report
-        
+
         # vertical muons stopping rate at site
-        R_v[i] = R_v0[i] * exp(deltaH / L[i])  
+        R_v[i] = R_v0[i] * exp(deltaH / L[i])
 
     # Integrate the stopping rate to get the vertical muon flux at depth z
     # at the sample site
-    cdef np.ndarray[double, ndim=1] phi_v = np.zeros_like(zarr)
+    cdef np.ndarray[double, ndim = 1] phi_v = np.zeros_like(zarr)
     cdef double tol = 1e-4  # relative error tolerance
 
     # we want to do the integrals in the order of decreasing depth
@@ -307,12 +307,12 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
 
     # indexes of the sorted, then reversed array
     cdef np.ndarray[long] sort_idxs
-    
+
     with cython.wraparound(True):
-        sort_idxs = np.argsort(zarr)[::-1]        
-    
-    cdef double[:] zsorted = zarr[sort_idxs]    
-        
+        sort_idxs = np.argsort(zarr)[::-1]
+
+    cdef double[:] zsorted = zarr[sort_idxs]
+
     # start with the flux below 2e5 g / cm2, assumed to be constant
     cdef:
         double a = 258.5 * 100 ** 2.66
@@ -320,9 +320,9 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
         double lim = LIMIT
         double phi_200k
     phi_200k = ((a / ((lim + 21000.0) * (((lim + 1000.0) ** 1.66) + b)))
-            * exp(-5.5e-6 * lim))
+                * exp(-5.5e-6 * lim))
     phi_v += phi_200k
-    
+
     # keep track of the vertical flux at the previous depth
     cdef:
         double prev_phi_v = phi_200k
@@ -330,14 +330,14 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
         cdef tuple argstup = (deltaH,)
         cdef double zi
         cdef long idx
-    
+
     i = 0
     for i in range(M):
         zi = zsorted[i]
         idx = sort_idxs[i]
         if zi < LIMIT:
             phi_v[idx], _ = scipy.integrate.quad(
-                        Rv, zi, prev_z, args=argstup, epsrel=tol, epsabs=0)
+                Rv, zi, prev_z, args=argstup, epsrel=tol, epsabs=0)
             phi_v[idx] += prev_phi_v
             prev_phi_v = phi_v[idx]
             prev_z = zi
@@ -354,7 +354,7 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
         np.ndarray[double] P_mu_tot
 
     # exponent for total depth (atmosphere + rock)
-    nofz = n_exponent(zarr + deltaH)  
+    nofz = n_exponent(zarr + deltaH)
     # d(n(z))/dz
     dndz = (-0.297 / 100.0) / ((zarr + deltaH) / 100.0 + 42) + 1.21e-5
 
@@ -365,7 +365,7 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
     # find stopping rate of negative muons/g/s
     # R = fraction_of_negative_muons * derivative(tot_muon_flux(z+deltaH))
     R = F_NEGMU * 2 * np.pi * ((R_v / (nofz + 1)) + (phi_v * dndz
-            / (nofz + 1) ** 2))
+                                                     / (nofz + 1) ** 2))
     R *= SEC_PER_YEAR  # convert to negative muons/g/yr
 
     # get nuclide production rates
@@ -374,7 +374,7 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
     P_mu_tot = P_fast + P_neg  # total production from muons, atoms/g/yr
 
     cdef np.ndarray[double] phi_v0
-    
+
     if not full_data:
         return P_mu_tot if P_mu_tot.size != 1 else P_mu_tot[0]
     else:
@@ -383,7 +383,7 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
         phi_v0 = np.empty_like(zarr)
         for i in range(M):
             phi_v0[i] = phi_vert_sl(zarr[i])
-        
+
         return {'phi_v0': phi_v0,
                 'R_v0': R_v0,
                 'phi_v': phi_v,
@@ -399,4 +399,3 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
                 'P_mu_tot': P_mu_tot,
                 'deltaH': deltaH,
                 }
-
