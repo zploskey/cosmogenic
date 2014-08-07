@@ -13,15 +13,22 @@ import scipy.optimize as opt
 from cosmogenic import production, sim
 
 
-def exposure_age(C, P, nuclide, z0=0.0, erosion_rate=None, z=None):
-    """
+def exposure_age(C, P, nuclide, delC=None, delP=None, z0=0.0,
+                 erosion_rate=None, z=None):
+    """ Calculate an exposure age.
+
     Parameters:
     ----------
     C:  concentration of cosmogenic nuclide (CN) (atoms / g)
     P:  function
-        local production rate at depth in g/cm**2
+        local production rate as a function of depth in g/cm**2
         units: (atoms / g / yr)
     nuclide: a cosmogenic nuclide object
+    delC: float
+          absolute uncertainty in the concentration C (1-sigma)
+    delP: float
+          absolute uncertainty in production rate P (1-sigma)
+          
     z0: modern depth (g / cm**2)
     erosion_rate (optional): assumed constant rate of erosion (g / cm**2 / yr),
                              default is no erosion. Ignored if z is supplied.
@@ -47,4 +54,20 @@ def exposure_age(C, P, nuclide, z0=0.0, erosion_rate=None, z=None):
 
     res = opt.minimize_scalar(residual, bounds=bounds)
     t = res.x
-    return t, sim.nexpose(P, nuclide, z, t)
+
+    if delC is None:
+        return t
+
+    # TODO: calculate uncertainty in the exposure age
+    delt = age_uncertainty(t, delC, nuclide, delP)
+    return t, delt
+
+
+def age_uncertainty(nuclide, t, delC, delP=None):
+    """
+    Calculate uncertainty in exposure age 
+    """
+    if delP is None:
+        delP = 0.0
+
+    raise NotImplementedError 
