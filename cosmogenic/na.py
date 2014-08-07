@@ -1,8 +1,6 @@
 """
-Implementation of the Neighborhood Search Algorithm 
-
-Implementation of the Neighborhood Algorithm after Sambridge (1999a)
-in Geophys. J. Int.
+Implementation of the Neighborhood Algorithm search phase after
+Sambridge (1999a), Geophys. J. Int.
 """
 
 from __future__ import division, print_function
