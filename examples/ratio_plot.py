@@ -24,5 +24,4 @@ def plot_production_ratio(n1, n2, max_depth_gcm2, npts=200):
     return (fig, ax)
 
 if __name__ == "__main__":
-    import nuclide
     plot_production_ratio(nuclide.Al26Qtz(), nuclide.Be10Qtz(), 10680.0)
