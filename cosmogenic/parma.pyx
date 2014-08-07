@@ -119,7 +119,7 @@ class PrimaryParticle(Particle):
         return flux_sec
 
     def Ec(self, rc):
-        num = (np.sqrt((1000 * rc * self.Z) ** 2 + self.Em ** 2) - self.Em
+        num = np.sqrt((1000 * rc * self.Z) ** 2 + self.Em ** 2) - self.Em
         return num / self.A
 
     def Es(self, rc, d):
