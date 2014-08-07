@@ -258,8 +258,9 @@ class NASampler(object):
 
 
 def search(fn, config):
-    """ Search the parameter space defined by config for minima using the
-    objective function fn, then save the results to disk."""
+    """ Search the parameter space defined by config for minima using
+    the objective function fn, then save the results to disk.
+    """
     sampler = NASampler(fn, config=config)
     sampler.generate_ensemble()
     sampler.save()
