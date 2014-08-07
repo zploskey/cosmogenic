@@ -1,7 +1,7 @@
 """
-Implementation of the Neighborhood Search Algorithm and Bayesian resampling
+Implementation of the Neighborhood Search Algorithm 
 
-Implementation of the Neighborhood Algorithm after Sambridge (1999a,b)
+Implementation of the Neighborhood Algorithm after Sambridge (1999a)
 in Geophys. J. Int.
 """
 
