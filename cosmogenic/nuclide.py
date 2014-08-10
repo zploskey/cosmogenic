@@ -15,12 +15,21 @@ from __future__ import division, print_function, unicode_literals
 import numpy as np
 import math
 
+from . import production
+
 ALPHA = 0.75  # constant from Heisinger 2002
 P36KFELD_SLHL = 22.5  # atoms / g pure Kfeldspar / yr
 P36K_SLHL = 160.0  # roughly, atoms / g K / yr
 
 
-class Be10Qtz(object):
+class Nuclide(object):
+    
+    def production_rate(self, *args, **kwargs):
+        """ Production rate"""
+        return lambda z: production.P_tot(z, n=self, *args, **kwargs)
+
+
+class Be10Qtz(Nuclide):
 
     """
     Data for the radioisotope Beryllium-10
@@ -89,7 +98,7 @@ class Be10Qtz(object):
         return concentration * self.relative_error(concentration)
 
 
-class Al26Qtz(object):
+class Al26Qtz(Nuclide):
 
     """
     Aluminum-26 data
@@ -150,7 +159,7 @@ class Al26Qtz(object):
         return concentration * self.relative_error(concentration)
 
 
-class Cl36Ca(object):
+class Cl36Ca(Nuclide):
 
     """
     Chlorine-36 in calcium.
@@ -170,7 +179,7 @@ class Cl36Ca(object):
         raise NotImplementedError("Cl-36 in Ca is not implemented yet.")
 
 
-class Cl36K(object):
+class Cl36K(Nuclide):
 
     """
     Chlorine-36 production in K (potassium).
@@ -189,7 +198,7 @@ class Cl36K(object):
         raise NotImplementedError("Cl-36 in Ca is not implemented yet.")
 
 
-class Cl36Kfeld(object):
+class Cl36Kfeld(Nuclide):
 
     """
     Data for the radioisotope Chlorine-36 produced in K-feldspar.
@@ -237,4 +246,4 @@ class Cl36Kfeld(object):
         """
         return concentration * self.relative_error(concentration)
 
-# TODO: Helium and carbon
+# TODO: Cl36 other pathways, Helium, neon, carbon

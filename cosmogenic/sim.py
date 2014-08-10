@@ -57,7 +57,7 @@ def nexpose(P, nuclide, z, ti, tf=0, tol=1e-4, thickness=None):
     return C, err
 
 
-def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
+def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p=None, n_gl=None,
                   postgl_shielding=0):
     """Find the resulting concentration profile for a glacial history and site.
 
@@ -89,6 +89,9 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p, n_gl=None,
     """
 
     z = np.atleast_1d(z)
+    
+    if p is None:
+        p = n.production_rate()
 
     if n_gl is not None:
         if n_gl > 1:
