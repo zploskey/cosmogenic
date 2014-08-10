@@ -29,7 +29,11 @@ class Nuclide(object):
 
     def get_production_rate(self, *args, **kwargs):
         """ Production rate"""
-        return lambda z: production.P_tot(z, n=self, *args, **kwargs)
+        
+        def p(z, *args, **kwargs):
+            return production.P_tot(z, n=self, *args, **kwargs)
+
+        return p
 
 
 class Be10Qtz(Nuclide):
