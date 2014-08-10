@@ -23,8 +23,11 @@ P36K_SLHL = 160.0  # roughly, atoms / g K / yr
 
 
 class Nuclide(object):
-    
-    def production_rate(self, *args, **kwargs):
+   
+    def __init__(self):
+        self.production_rate = self.get_production_rate()
+
+    def get_production_rate(self, *args, **kwargs):
         """ Production rate"""
         return lambda z: production.P_tot(z, n=self, *args, **kwargs)
 
@@ -82,6 +85,7 @@ class Be10Qtz(Nuclide):
         # stopped/negative muon yield
         self.k_neg = self.fC * self.fD * self.fstar
         #self.delk_neg = self.fC * self.fD * self.delfstar
+        super(Be10Qtz, self).__init__()
 
     def relative_error(self, concentration):
         """ Approximate relative error for concentration. """
@@ -143,6 +147,7 @@ class Al26Qtz(Nuclide):
 
         self.k_neg = self.fC * self.fD * self.fstar
         # self.delk_neg = self.fC * self.fD * self.delfstar
+        super(Al26Qtz, self).__init__()
 
     def relative_error(self, concentration):
         """ Approximate fractional error for the concentration.
@@ -230,6 +235,7 @@ class Cl36Kfeld(Nuclide):
         # stopped/negative muon yield
         self.k_neg = self.fC * self.fD * self.fstar
         #self.delk_neg = self.fC * self.fD * self.delfstar
+        super(Cl36Kfeld, self).__init__()
 
     def relative_error(self, concentration):
         """
