@@ -37,7 +37,6 @@ z = z0 / rho / 100
 lines = []
 leg = []
 
-#N = sim.fwd_profile_steps(z0, z_removed, t, be10, alt, lat)
 N = np.zeros(z0.size)
 Ns = np.zeros((n + 1, z0.size))
 # zeroth glaciation

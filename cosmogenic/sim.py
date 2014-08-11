@@ -9,7 +9,7 @@ import scipy.integrate
 from cosmogenic import production
 
 
-def nexpose(P, nuclide, z, ti, tf=0, tol=1e-4, thickness=None):
+def nexpose(nuclide, z, ti, tf=0, p=None, tol=1e-4, thickness=None):
     """
     Calculate concentrations for an arbitrary depth history z(t).
 
@@ -40,16 +40,18 @@ def nexpose(P, nuclide, z, ti, tf=0, tol=1e-4, thickness=None):
                err is an estimate of the absolute error in C [atoms/g]
 
     """
+    if p is None:
+        p = nuclide.production_rate
 
     # define the integrand: instantaneous production and decay
-    def p(t):
-        return P(z(t)) * np.exp(-nuclide.LAMBDA * t)
+    def P(t):
+        return p(z(t)) * np.exp(-nuclide.LAMBDA * t)
 
     if thickness is None:
         res = scipy.integrate.quad(p, tf, ti, epsrel=tol)
     else:
         bottom_z = lambda t: z(t) + thickness
-        p2d = lambda z, t: P(z) * np.exp(-nuclide.LAMBDA * t) / thickness
+        p2d = lambda z, t: p(z) * np.exp(-nuclide.LAMBDA * t) / thickness
         res = scipy.integrate.dblquad(p2d, tf, ti, z, bottom_z, epsrel=tol)
 
     C = res[0]
@@ -91,7 +93,7 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p=None, n_gl=None,
     z = np.atleast_1d(z)
     
     if p is None:
-        p = n.production_rate()
+        p = n.production_rate
 
     if n_gl is not None:
         if n_gl > 1:
@@ -153,12 +155,14 @@ def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     return (t, z)
 
 
-def expose(z, t_init, t_final, n, p):
+def expose(z, t_init, t_final, n, p=None):
     """
     Expose samples a depths z (g/cm**2) from time t_init until time t_final
     (both in years) at production rate p(z). Adjust their concentrations for
     radioactive decay since t_final. Return the concentration of nuclide n.
     """
+    if p is None:
+        p = n.production_rate
     # See note in simple_expose for why we must assign this temporary.
     pofz = p(z)
     L = n.LAMBDA
@@ -190,80 +194,6 @@ def simple_expose(z, t_exp, n, p):
     pofz = p(z)
     N = (pofz / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
     return N
-
-
-def fwd_profile(z0, z_removed, t, n, p):
-    """
-    Calculates the nuclide concentration profile resulting from repeated
-    glaciation of a bedrock surface.
-
-    In all parameters that reference time, time is zero starting at modern day
-    and increases into the past.
-
-    z0: modern depths at which we want predicted concentrations (g/cm2)
-    z_removed: list of depths of rock removed in successive glaciations (g/cm2)
-    t: ages of switching between glacial/interglacial (array of times in years)
-    exposed to cosmic rays in the recent past (in years). The first element of
-    this array should be the exposure time since deglaciation, increasing after.
-    n: nuclide object
-    p: production rate function of depth in g/cm2
-    """
-    L = n.LAMBDA  # decay constant
-    N = np.zeros(z0.size)  # nuclide concentration
-    t_beg = t[2::2]
-    t_end = t[1::2]
-
-    # Add nuclides formed postglacially
-    N += simple_expose(z0, t[0], n, p)
-
-    z_cur = z0.copy()
-    for i, dz in enumerate(z_removed):
-        z_cur += dz
-        N += (p(z_cur) / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
-
-    return N
-
-
-def fwd_profile_slow(z0, z_removed, t, n, h, lat):
-    """
-    Calculates the nuclide concentration profile resulting from repeated
-    glaciation of a bedrock surface.
-
-    In all parameters that reference time, time is zero starting at modern day
-    and increases into the past.
-
-    z0: modern depths at which we want predicted concentrations (g/cm2)
-    z_removed: list of depths of rock removed in successive glaciations (g/cm2)
-    t: ages of switching between glacial/interglacial (array of times in years)
-    exposed to cosmic rays in the recent past (in years). The first element of
-    this array should be the exposure time since deglaciation, increasing after.
-    n: the nuclide being produced (nuclide object)
-    h: elevation of the site (m)
-    lat: latitude of the site (degrees)
-    """
-    L = n.LAMBDA
-    N = np.zeros(z0.size)
-    t_beg = t[2::2]
-    t_end = t[1::2]
-
-    # Add nuclides formed postglacially
-    N += simple_expose_slow(z0, t[0], n, h, lat)
-
-    z_cur = z0.copy()
-    for i, dz in enumerate(z_removed):
-        z_cur += dz
-        p = production.P_tot(z_cur, h, lat, n)
-        N += (p / L) * (np.exp(-L * t_end[i]) - np.exp(-L * t_beg[i]))
-
-    return N
-
-
-def rand_erosion_hist(avg, sigma, n):
-    """
-    Generates a sequence of n numbers randomly distributed about avg and
-    standard deviation sigma.
-    """
-    return np.random.normal(avg, sigma, n)
 
 
 def steady_erosion(P, z0, eros, nuc, T, T_stop=0):
