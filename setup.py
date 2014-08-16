@@ -5,8 +5,11 @@ import subprocess
 
 import numpy
 
+import cosmogenic
+
 from setuptools import setup
 from setuptools.extension import Extension
+
 
 try:
     from sphinx.setup_command import BuildDoc
@@ -55,7 +58,7 @@ def setup_package():
     setup(
         name="cosmogenic",
         packages=["cosmogenic"],
-        version="0.1.0",
+        version=cosmogenic.__version__,
         description="Library for modeling cosmogenic nuclides",
         author="Zach Ploskey",
         author_email="zploskey@gmail.com",
