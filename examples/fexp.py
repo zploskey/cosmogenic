@@ -21,7 +21,7 @@ be10 = nuclide.Be10Qtz()
 tH = 17000
 
 # holocene exposure only
-Nhol = sim.expose(z=z0, t_init=tH, t_final=0.0, n=be10)
+Nhol = sim.expose(z=z0, ti=tH, tf=0.0, n=be10)
 
 # vary glaciation length (t_gl), keeping glacial cycle length constant
 N10 = sim.multiglaciate(dz=dz, t_gl=10000, t_intergl=90000, t_postgl=tH,

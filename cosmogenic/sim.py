@@ -9,7 +9,7 @@ import scipy.integrate
 from cosmogenic import production
 
 
-def nexpose(nuclide, z, ti, tf=0, p=None, tol=1e-4, thickness=None):
+def nexpose(n, z, ti, tf=0, p=None, tol=1e-4, thickness=None):
     """
     Calculate concentrations for an arbitrary depth history z(t).
 
@@ -17,10 +17,7 @@ def nexpose(nuclide, z, ti, tf=0, p=None, tol=1e-4, thickness=None):
 
     Parameters
     ----------
-    P : function or callable
-        P(z), production rate of nuclide in atoms/g/year as function of depth
-        in g/cm**2.
-    nuclide : cosmogenic.nuclide object
+    n : cosmogenic.nuclide object
     z : function or callable
         z(t), Depth in g/cm**2 as a function of time t in years. Time decreases
         until the present.
@@ -28,6 +25,9 @@ def nexpose(nuclide, z, ti, tf=0, p=None, tol=1e-4, thickness=None):
         initial exposure age (years ago)
     tf : float
         time when exposure stopped (years ago)
+    p : function or callable
+        P(z), production rate of nuclide in atoms/g/year as function of depth
+        in g/cm**2.
     tol : float
           error tolerance for the integration
     thickness : float (optional)
@@ -41,17 +41,17 @@ def nexpose(nuclide, z, ti, tf=0, p=None, tol=1e-4, thickness=None):
 
     """
     if p is None:
-        p = nuclide.production_rate
+        p = n.production_rate
 
     # define the integrand: instantaneous production and decay
     def P(t):
-        return p(z(t)) * np.exp(-nuclide.LAMBDA * t)
+        return p(z(t)) * np.exp(-n.LAMBDA * t)
 
     if thickness is None:
-        res = scipy.integrate.quad(p, tf, ti, epsrel=tol)
+        res = scipy.integrate.quad(P, tf, ti, epsrel=tol)
     else:
         bottom_z = lambda t: z(t) + thickness
-        p2d = lambda z, t: p(z) * np.exp(-nuclide.LAMBDA * t) / thickness
+        p2d = lambda z, t: p(z) * np.exp(-n.LAMBDA * t) / thickness
         res = scipy.integrate.dblquad(p2d, tf, ti, z, bottom_z, epsrel=tol)
 
     C = res[0]
@@ -107,7 +107,7 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p=None, n_gl=None,
 
     # add the atoms created as we go back in time
     # recent interglacial first
-    conc = simple_expose(z + postgl_shielding, t_postgl, n, p)
+    conc = expose(n, z + postgl_shielding, t_postgl, p=p)
     z_cur = z.copy()  # start at current depths
     t_begint = t_postgl  # the time when the current interglacial began
     t_endint = 0.0  # time (now) when current interglacial ended
@@ -115,7 +115,7 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p=None, n_gl=None,
         z_cur += dz[i]  # go back to depth and time before glacial erosion
         t_endint = t_begint + t_gl[i]
         t_begint = t_endint + t_intergl[i]
-        conc += expose(z_cur, t_begint, t_endint, n, p)
+        conc += expose(n, z_cur, t_begint, t_endint, p)
     return conc
 
 
@@ -155,45 +155,20 @@ def glacial_depth_v_time(gl, intergl, postgl, dz, n_gl=None):
     return (t, z)
 
 
-def expose(z, t_init, t_final, n, p=None):
+def expose(n, z, ti, tf=0, p=None):
     """
-    Expose samples a depths z (g/cm**2) from time t_init until time t_final
+    Expose samples a depths z (g/cm**2) from time ti until time tf
     (both in years) at production rate p(z). Adjust their concentrations for
-    radioactive decay since t_final. Return the concentration of nuclide n.
+    radioactive decay since tf. Return the concentration of nuclide n.
     """
     if p is None:
         p = n.production_rate
+    
     # See note in simple_expose for why we must assign this temporary.
     pofz = p(z)
     L = n.LAMBDA
-    conc = (pofz / L) * (np.exp(-L * t_final) - np.exp(-L * t_init))
+    conc = (pofz / L) * (np.exp(-L * tf) - np.exp(-L * ti))
     return conc
-
-
-def expose_from_site_data(z, t_init, t_final, n, h, lat):
-    p = production.P_tot(z, h, lat, n)
-    return (expose(z, t_init, t_final, n, p), p)
-
-
-def simple_expose_slow(z, t_exp, n, h, lat):
-    # calculate the production rate
-    p = production.P_tot(z, h, lat, n)
-    return (p / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
-
-
-def simple_expose(z, t_exp, n, p):
-    """
-    Expose samples at depths z (g/cm**2) for t_exp years, recording nuclide n
-    with production rate p (atoms/g/yr).
-    """
-
-    # Note:
-    # We must calculate the production rate at depths z first.
-    # Otherwise, there are bizarre bugs when using the p = production.P_tot
-    # The test case for this function fails if we don't assign a temporary.
-    pofz = p(z)
-    N = (pofz / n.LAMBDA) * (1 - np.exp(-n.LAMBDA * t_exp))
-    return N
 
 
 def steady_erosion(P, z0, eros, nuc, T, T_stop=0):
