@@ -10,6 +10,7 @@ import cosmogenic
 from setuptools import setup
 from setuptools.extension import Extension
 
+ISRELEASED = False
 
 try:
     from sphinx.setup_command import BuildDoc
@@ -26,6 +27,7 @@ if HAVE_SPHINX:
             if ret != 0:
                 raise RuntimeError("Building Cosmogenic failed!")
             BuildDoc.run(self)
+
 
 def setup_package():
     
