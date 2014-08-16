@@ -16,7 +16,7 @@ before_install:
 
 install:
   - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
-  - conda install --yes requirements.txt
+  - conda install --yes --file requirements.txt
   - pip install .
 
 script: nosetests
