@@ -18,7 +18,7 @@ install:
   - conda create --yes -n test python=$TRAVIS_PYTHON_VERSION
   - source activate test
   - conda install --yes --file requirements.txt
-  - conda install pip
+  - conda install --yes pip
   - pip install .
 
 script: nosetests
