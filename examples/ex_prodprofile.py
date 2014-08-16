@@ -4,9 +4,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-import nuclide
-import production
-import muon
+from cosmogenic import nuclide, production, muon
 
 # s = sample.Sample(rho=2.67, h=1000, lat=65, shielding=1.0, z=1)
 # print "Total muon flux: %f " % muon.tot_mu_flux(s)
@@ -18,7 +16,7 @@ be10 = nuclide.Be10Qtz()
 
 # get production curves first
 Psp = production.P_sp(z0, be10)
-muondata = muon.P_mu_total(z0, h, be10, full_data=True)
+muondata = muon.P_mu_total(z0, n=be10, h=h, full_data=True)
 Pfmu = muondata['P_fast']
 Pnmu = muondata['P_neg']
 Pmu = Pfmu + Pnmu

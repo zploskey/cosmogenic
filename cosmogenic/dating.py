@@ -14,7 +14,7 @@ from cosmogenic import production, sim
 
 
 def exposure_age(C, P, nuclide, delC=None, delP=None, z0=0.0,
-                 erosion_rate=None, z=None):
+                 erosion_rate=None, z=None, thickness=None):
     """ Calculate an exposure age.
 
     Parameters:
@@ -44,7 +44,7 @@ def exposure_age(C, P, nuclide, delC=None, delP=None, z0=0.0,
                 return z0 + erosion_rate * t
 
     def residual(t):
-        C_model, _ = sim.nexpose(P, nuclide, z, t)
+        C_model, _ = sim.nexpose(n, z, t, p=P, thickness=thickness)
         return np.abs(C - C_model)
 
     # Go out to 7 half lives + 30%... This should definitely

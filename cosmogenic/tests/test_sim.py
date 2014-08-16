@@ -31,38 +31,40 @@ class TestSim(TestBase):
         self.thickness = 10  # g/cm**2, equivalent to ~4 cm of rock
 
     def test_simple_expose(self):
-        N = sim.simple_expose(self.z, self.t_postgl, self.n, self.p)
-        Nmoretime = sim.simple_expose(self.z, self.t_postgl + 1000.0, self.n,
-                                      self.p)
-        Nmoredepth = sim.simple_expose(self.z + 500.0, self.t_postgl, self.n,
-                                       self.p)
+        N = sim.expose(self.n, self.z, self.t_postgl, p=self.p)
+        Nmoretime = sim.expose(self.n, self.z, self.t_postgl + 1000.0,
+                               p=self.p)
+        Nmoredepth = sim.expose(self.n, self.z + 500.0, self.t_postgl,
+                                p=self.p)
         self.assertTrue((N < Nmoretime).all())
         self.assertTrue((N > Nmoredepth).all())
 
     def test_expose(self):
         ti = 95000.0
         tf = self.t_postgl
-        N = sim.expose(self.z, ti, tf, self.n, self.p)
-        Nmoretime = sim.expose(self.z, ti + 500.0, tf - 500.0, self.n, self.p)
-        Nmoredepth = sim.expose(self.z + 500.0, ti, tf, self.n, self.p)
+        N = sim.expose(self.n, self.z, ti, tf, p=self.p)
+        Nmoretime = sim.expose(self.n, self.z, ti + 500.0, tf - 500.0, p=self.p)
+        Nmoredepth = sim.expose(self.n, self.z + 500.0, ti, tf, p=self.p)
         self.assertTrue((N < Nmoretime).all())
         self.assertTrue((N > Nmoredepth).all())
 
     def test_nexpose(self):
         ti = 95000.0
         tf = self.t_postgl
-        z = lambda t: 50 + 0.005 * t
-        N = sim.nexpose(self.p, self.n, z, ti, tf)
-        Nmoretime = sim.nexpose(self.p, self.n, z, ti + 500.0, tf - 500.0)
-        Nmoredepth = sim.nexpose(
-            self.p,
+        z = lambda t: 0.01 * t
+        N, _ = sim.nexpose(self.n, z, ti, tf, p=self.p)
+        Nmoretime, _ = sim.nexpose(self.n, z, ti + 500.0, tf - 500.0, p=self.p)
+        Nmoredepth, _ = sim.nexpose(
             self.n,
-            lambda t: z(t) + 500.0,
+            lambda t: z(t) + 1000.0,
             ti,
-            tf)
-        Nmorethick = sim.nexpose(self.p, self.n, z, ti, tf,
-                                 thickness=self.thickness)
+            tf,
+            p=self.p)
+        Nmorethick, _ = sim.nexpose(self.n, z, ti, tf,
+                                 thickness=self.thickness,
+                                 p=self.p)
         self.assertTrue(N < Nmoretime)
+        print(N, Nmoredepth)
         self.assertTrue(N > Nmoredepth)
         self.assertTrue(N > Nmorethick)
 

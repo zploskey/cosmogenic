@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from na import NASampler
+from cosmogenic.na import NASampler
 
 def func(x):
     return x[0] ** 2 + x[1] ** 2
@@ -11,16 +11,15 @@ hi = 5
 
 ns = 20
 nr = 3
-tol = 0.01
 ndim = 2
 lo = np.ones(ndim) * lo
 hi = np.ones(ndim) * hi
-sampler = NASampler(ns, nr, func, lo, hi, tol) 
+sampler = NASampler(func, ns, nr, lo, hi, d=2) 
 
-print "Neighborhood Algorithm Minima Finder"
-print "Finding the local minima using the neighborhood algorithm..."
+print("Neighborhood Algorithm Minima Finder")
+print("Finding the local minima using the neighborhood algorithm...")
 
-sampler.generate_ensemble(5)
+sampler.generate_ensemble()
 
 plt.figure(1)
 plt.title('Sampling locations')
