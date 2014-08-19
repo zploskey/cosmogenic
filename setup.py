@@ -39,10 +39,7 @@ def setup_package():
     cwd = os.path.dirname(os.path.abspath(__file__))
     if not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
         # Compile Cython modules unless building from source release.
-        try:
-            from Cython.Build import cythonize 
-        except:
-            raise RuntimeError("Cython is required.")
+        from Cython.Build import cythonize 
         
         numpy_include = numpy.get_include()
         ext_modules = cythonize([
