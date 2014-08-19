@@ -3,7 +3,6 @@ language: python
 python:
   - "2.6"
   - "2.7"
-  - "3.2"
   - "3.3"
   - "3.4"
 
@@ -19,6 +18,7 @@ install:
   - source activate test
   - conda install --yes --file requirements.txt
   - conda install --yes pip
-  - pip install .
+  - python setup.py build_ext --inplace
+  - python setup.py install
 
 script: nosetests
