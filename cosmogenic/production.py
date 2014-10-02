@@ -83,10 +83,6 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
     ----------
     z : array_like
        depth in g/cm**2 (vector or scalar)
-    alt : array_like
-          site altitude in meters
-    lat : array_like,
-          site latitude (in degrees North)
     n : nuclide object from cosmogenic.nuclide
         The nuclide to you want a production rate for. Can be a user-defined
         object as long as it satisfies the same interfaces as the objects
@@ -94,6 +90,14 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
     scaling : string, optional
               If "stone" applies Stone 2000 scaling factor to spallation
               production rate.
+    alt : array_like, optional
+          site altitude in meters
+    lat : array_like, optional
+          site latitude (in degrees North)
+    s : array_like, optional
+        topographic shielding factor (0 to 1)
+    pressure : array_like, optional
+               pressure in hPa
 
     Returns
     -------
@@ -108,7 +112,7 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
 
 
 def interpolate_P_tot(
-        max_depth, npts, n=None, scaling=None, alt=None, lat=None):
+        max_depth, npts, n=None, scaling=None, alt=None, lat=None, s=None):
     """
     Interpolates the production rate function using a spline interpolation.
     Evaluated points are log base 2 spaced, with more points concentrated near
