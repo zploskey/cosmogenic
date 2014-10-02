@@ -198,13 +198,17 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         return res_arr[0] if res_arr.size == 1 else res_arr
 
     def save(self, filename):
-        """
-        What gets saved is pretty specific to the version of scipy that we are use
-        so is important to test that this works with new versions of scipy. For
-        now, the only important values for the spline interpolation are stored in
-        the spline's _data member, but could change, as could the structure of
-        _eval_args. To be safe, do not depend on this to load old interpolations.
-        It is probably safest to create a new interpolation for a new scipy
-        version.
+        """Save the interpolation data to a file.
+
+        This data may not be the same from one version of scipy to
+        another, and may break with new versions, so is important to
+        test that this works with new versions of scipy. For now, the
+        only important values for the spline interpolation are stored
+        in the spline's _data member, but could change, as could the
+        structure of _eval_args. To be safe, do not depend on this to
+        load old interpolations.  It is probably safest to create a
+        new interpolation for a new scipy version. The save files are
+        also not compatible between python 2 and python 3.
+
         """
         util.pickle(self._data, filename)
