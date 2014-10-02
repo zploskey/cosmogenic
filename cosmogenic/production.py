@@ -27,7 +27,7 @@ def P_sp(z, n, scaling=None, alt=None,
     ::math P_{sp} = f_{scaling} * P_0 * exp(-z / \Lambda)
 
     where f_scaling is a scaling factor. It currently scales for altitude
-    and latitude after Stone (2000).
+    (or air pressure) and latitude after Stone (2000).
 
     Parameters
     ----------
@@ -38,7 +38,7 @@ def P_sp(z, n, scaling=None, alt=None,
         object as long as it satisfies the same interfaces as the objects
         in cosmogenic.nuclide.
     scaling : string, optional
-              If "stone" applies Stone 2000 scaling factor
+              If "St" applies Stone 2000 scaling factor
     alt : array_like
           site altitude in meters
     lat : array_like,
@@ -88,7 +88,7 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
         object as long as it satisfies the same interfaces as the objects
         in cosmogenic.nuclide.
     scaling : string, optional
-              If "stone" applies Stone 2000 scaling factor to spallation
+              If "St" applies Stone 2000 scaling factor to spallation
               production rate.
     alt : array_like, optional
           site altitude in meters
@@ -111,8 +111,8 @@ def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
     return production_rate
 
 
-def interpolate_P_tot(
-        max_depth, npts, n=None, scaling=None, alt=None, lat=None, s=None):
+def interpolate_P_tot(max_depth, npts, n=None, scaling=None, alt=None,
+                      lat=None, s=None, pressure=None):
     """
     Interpolates the production rate function using a spline interpolation.
     Evaluated points are log base 2 spaced, with more points concentrated near
@@ -126,16 +126,21 @@ def interpolate_P_tot(
            number of points to use in interpolation
     n : nuclide object
     scaling : string, optional
-              If set to "stone", applies Stone 2000 scaling scheme to
+              If "St", applies Stone 2000 scaling scheme to
               the spallation production rate.
-    alt : float
+    alt : float, optional
           site altitude in meters
-    lat : float
+    lat : float, optional
           site latitude (degrees)
+    s : float, optional
+        topographic shielding factor
+    pressure: float, optional
+        pressure in hPa
 
     """
     zs = np.unique(np.logspace(0, np.log2(max_depth + 1), npts, base=2)) - 1
-    prod_rates = P_tot(zs, n=n, scaling=scaling, alt=alt, lat=lat)
+    prod_rates = P_tot(zs, n=n, scaling=scaling, alt=alt, lat=lat,
+                       s=s, pressure=pressure)
     p = ProductionSpline(zs, prod_rates)
     return p, zs, prod_rates
 
