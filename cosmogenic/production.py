@@ -43,6 +43,12 @@ def P_sp(z, n, scaling=None, alt=None,
           site altitude in meters
     lat : array_like,
           site latitude (in degrees North)
+    t : array_like, optional
+        time of production rate in years before present
+    s : array_like, optional
+        topographic shielding fraction (0 to 1)
+    pressure : array_like, optional
+               pressure in hPa
 
     Returns
     -------
@@ -62,7 +68,11 @@ def P_sp(z, n, scaling=None, alt=None,
         raise NotImplementedError("No Sato scaling implemented yet.")
 
     p_sp_ref = n.scaling_p_sp_ref[scaling]
-    return f_scaling * p_sp_ref * np.exp(-z / LAMBDA_h)
+
+    if s is None:
+        s = 1.0
+
+    return s * f_scaling * p_sp_ref * np.exp(-z / LAMBDA_h)
 
 
 def P_tot(z, n, scaling=None, alt=None, lat=None, s=None, pressure=None):
