@@ -91,19 +91,23 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p=None, n_gl=None,
     """
 
     z = np.atleast_1d(z)
-    
+    dz = np.atleast_1d(dz)
+    t_gl = np.atleast_1d(t_gl)
+    t_intergl = np.atleast_1d(t_intergl)
+    t_postgl = np.atleast_1d(t_postgl)
+
     if p is None:
         p = n.production_rate
 
-    if n_gl is not None:
-        if n_gl > 1:
-            ones = np.ones(n_gl)
-            dz *= ones
-            t_gl *= ones
-            t_intergl *= ones
-    else:
+    if n_gl is None:
         n_gl = dz.size
-        assert dz.size == t_gl.size == t_intergl.size
+    
+    ones = np.ones(n_gl)
+    dz = dz * ones if dz.size is not n_gl else dz
+    t_gl = t_gl * ones if t_gl.size is not n_gl else t_gl
+    t_intergl = (t_intergl * ones if t_intergl.size is not n_gl
+                                  else intergl)
+    assert dz.size == t_gl.size == t_intergl.size
 
     # add the atoms created as we go back in time
     # recent interglacial first
