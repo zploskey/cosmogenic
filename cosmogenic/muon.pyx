@@ -393,7 +393,6 @@ cpdef P_mu_total(z, object n, h=None, is_alt=True, full_data=False):
                 'P_fast': P_fast,
                 'Beta': Beta,
                 'Ebar': Ebar,
-                'P_fast': P_fast,
                 'P_neg': P_neg,
                 'LZ': L,
                 'P_mu_tot': P_mu_tot,
