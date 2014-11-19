@@ -106,7 +106,7 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p=None, n_gl=None,
     dz = dz * ones if dz.size is not n_gl else dz
     t_gl = t_gl * ones if t_gl.size is not n_gl else t_gl
     t_intergl = (t_intergl * ones if t_intergl.size is not n_gl
-                                  else intergl)
+                                  else t_intergl)
     assert dz.size == t_gl.size == t_intergl.size
 
     # add the atoms created as we go back in time
