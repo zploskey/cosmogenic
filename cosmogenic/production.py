@@ -15,9 +15,6 @@ from cosmogenic import util
 
 LAMBDA_h = 160.0  # attenuation length of hadronic component in atm, g / cm2
 
-DEFAULT_ALT = 0.0  # sea level
-DEFAULT_LAT = 75.0  # high latitude
-
 
 def P_sp(z, n, scaling=None, alt=None,
          lat=None, t=None, s=None, pressure=None):
@@ -226,8 +223,8 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         in the spline's _data member, but could change, as could the
         structure of _eval_args. To be safe, do not depend on this to
         load old interpolations.  It is probably safest to create a
-        new interpolation for a new scipy version. The save files are
-        also not compatible between python 2 and python 3.
+        new interpolation for a new scipy version. The saved files are
+        not compatible between Python 2 and Python 3.
 
         """
         util.pickle(self._data, filename)
