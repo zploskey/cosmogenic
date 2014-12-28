@@ -25,9 +25,9 @@ def nexpose(n, z, ti, tf=0, p=None, tol=1e-4, thickness=None):
         initial exposure age (years ago)
     tf : float
         time when exposure stopped (years ago)
-    p : function or callable
+    p : function or callable (optional)
         P(z), production rate of nuclide in atoms/g/year as function of depth
-        in g/cm**2.
+        in g/cm**2.  If not supplied, n.production_rate is used.
     tol : float
           error tolerance for the integration
     thickness : float (optional)
@@ -100,7 +100,7 @@ def multiglaciate(dz, t_gl, t_intergl, t_postgl, z, n, p=None, n_gl=None,
         p = n.production_rate
 
     if n_gl is None:
-        n_gl = dz.size
+        n_gl = max(dz.size, t_gl.size, t_intergl.size)
     
     ones = np.ones(n_gl)
     dz = dz * ones if dz.size is not n_gl else dz
@@ -164,6 +164,8 @@ def expose(n, z, ti, tf=0, p=None):
     Expose samples a depths z (g/cm**2) from time ti until time tf
     (both in years) at production rate p(z). Adjust their concentrations for
     radioactive decay since tf. Return the concentration of nuclide n.
+    
+    If p is not supplied, n.production_rate is used.
     """
     if p is None:
         p = n.production_rate
