@@ -9,6 +9,27 @@ unless otherwise noted.
 Reference:
     Borchers et al. (2014) Geological calibration of spallation production
     rates in the CRONUS-Earth Project. Quaternary Geochronology, in press.
+
+Production rates from muons are calculated using functions and
+constants from Heisinger (2002a,b), except when using a revised
+set of constants derived from fitting Beacon Valley core data
+by John Stone and contained in the "stone" set of constants.
+
+In general, classes in this module contain the data and functions
+needed to describe the production pathway from target element to
+the resulting nuclide.  They are named as:
+    "name" + "mass number" + "target material"
+where target material is typically a mineral, or in some cases,
+a specific element.
+
+Some base classes may omit the target material, but are
+not intended to be directly used.
+
+Each complete production pathway should contain the following
+parameters:
+    fC: chemical compound factor
+    fD: probability that the muon does not decay in the k-shell
+        before being captured by the nucleus
 """
 from __future__ import division, print_function, unicode_literals
 
@@ -18,12 +39,11 @@ import math
 from . import production
 
 ALPHA = 0.75  # constant from Heisinger 2002
-P36KFELD_SLHL = 22.5  # atoms / g pure Kfeldspar / yr
-P36K_SLHL = 160.0  # roughly, atoms / g K / yr
 
 
 class Nuclide(object):
-   
+    """Base object for all nuclides."""   
+
     def __init__(self):
         self.production_rate = self.get_production_rate()
 
@@ -37,9 +57,8 @@ class Nuclide(object):
 
 
 class Be10Qtz(Nuclide):
-
     """
-    Data for the radioisotope Beryllium-10
+    Data for the radio-isotope Beryllium-10
 
     Parameters
     ----------
@@ -107,7 +126,6 @@ class Be10Qtz(Nuclide):
 
 
 class Al26Qtz(Nuclide):
-
     """
     Aluminum-26 data
     """
@@ -168,28 +186,48 @@ class Al26Qtz(Nuclide):
         return concentration * self.relative_error(concentration)
 
 
-class Cl36Ca(Nuclide):
+class Cl36(Nuclide):
+    LAMBDA = math.log(2) / 3.01e5  # decay constant, 1/yr
 
+
+class Cl36CaCO3(Cl36):
     """
     Chlorine-36 in calcium.
     """
-    # map scaling scheme codes to reference spallation production rates
-    scaling_p_sp_ref = {
-        "Sa": 56.27,
-        "St": 52.34,  # sea level high latitude prod'n minus muon
-        "Sf": 56.61,
-        "Lm": 51.83,
-        "De": 55.90,
-        "Du": 55.27,
-        "Li": 60.66,
-    }
 
-    def __init__(self, constants='stone'):
-        raise NotImplementedError("Cl-36 in Ca is not implemented yet.")
+    # factors from Heisinger 2002b rel. to slow negative muon production
+    fC = 0.361
+    fD = 0.8486
+    
+    # number of atoms of Ca per g of CaCO3
+    Natoms = 6.017e21
+
+    def __init__(self, constants='heisinger', fCa=0.4004):
+        # map scaling scheme codes to reference spallation production rates
+        self.scaling_p_sp_ref = {
+            "Sa": 56.27 * fCa,
+            "St": 52.34 * fCa,  # sea level high latitude prod'n minus muon
+            "Sf": 56.61 * fCa,
+            "Lm": 51.83 * fCa,
+            "De": 55.90 * fCa,
+            "Du": 55.27 * fCa,
+            "Li": 60.66 * fCa,
+        }
+        
+        if constants == 'heisinger':
+            self.fstar = 0.045
+            self.delfstar = 0.005
+            self.sigma0 = 27.4e-30
+            self.delsigma0 = 5.9e-30
+        elif constants == 'braucher':
+            self.fstar = 1.362e-2
+            self.sigma0 = 8.262e-30
+        else:
+            raise NotImplementedError(
+                    'Only "heisinger" constants are currently included.')
 
 
-class Cl36K(Nuclide):
-
+class Cl36K(Cl36):
     """
     Chlorine-36 production in K (potassium).
     """
@@ -202,55 +240,76 @@ class Cl36K(Nuclide):
         "Du": 128.89,
         "Li": 142.24,
     }
+    
+    # factors from Heisinger 2002b rel. to slow negative muon production
+    # these are for K20 so must be wrong for pure K
+    # TODO: FIXME
+    fC = 0.755  # chemical compound factor
+    fD = 0.8020
 
-    def __init__(self, constants='stone'):
-        raise NotImplementedError("Cl-36 in Ca is not implemented yet.")
+    def __init__(self, constants='braucher'):
+        self.fstar = 5.857e-2
+        self.sigma0 = 9.214e-30
+        raise NotImplementedError(
+                'Pure K production not implemented because fC is not known')
 
 
-class Cl36Kfeld(Nuclide):
-
+class Cl36Kfeld(Cl36):
+    """Represent the radioisotope Chlorine-36 production in K-feldspar.
+    
+    For pure orthoclase by default.  Can be adjusted for K fraction by
+    mass (fK).
     """
-    Data for the radioisotope Chlorine-36 produced in K-feldspar.
-
-    This can be used to predict the production rate in pure K-feldspar.
-    """
-
-    def __init__(self, constants='stone'):
+    
+    def __init__(self, fK=0.1405, constants='braucher'):
+        # map scaling scheme codes to reference spallation production rates
+        # We multiply by 0.1405, the fraction by weight of K in pure orthoclase
+        self.scaling_p_sp_ref = {
+            "Sa": 156.09 * fK,
+            "St": 150.72 * fK,  # sea level high latitude prod'n minus muon
+            "De": 128.25 * fK,
+            "Du": 128.89 * fK,
+            "Li": 142.24 * fK,
+        }
+        
         self.Natoms = 2.164e21  # atoms K / g Kfeldspar
-        self.LAMBDA = math.log(2) / 3.01e5  # decay constant, 1/yr
-
-        self.P36_slhl = P36KFELD_SLHL
 
         # probability factors
         self.fC = 0.12
         self.fD = 0.8020
 
         if constants == 'heisinger':
-            raise NotImplementedError("Heisinger 36-Cl not yet implemented.")
+            self.fstar = 0.035
+            self.delfstar = 0.005
+            # TODO: still need to verify proper sigma values
+            raise NotImplementedError(
+                    "Heisinger 36-Cl in K-feldspar not yet implemented.")
         elif constants == 'stone':
             # John Stone, pers. communication
             self.fstar = 0.0568
             self.sigma0 = 9.40e-30
-            # for consistency calculate what sigma190 should be
-            self.sigma190 = self.sigma0 * 190 ** ALPHA
+        elif constants == 'braucher':
+            self.fstar = 5.857e-2
+            self.sigma0 = 9.214e-30
         else:
             raise Exception('Unknown constants: %s' % constants)
-
+        
+        # for consistency calculate what sigma190 should be
+        self.sigma190 = self.sigma0 * 190 ** ALPHA
         # stopped/negative muon yield
         self.k_neg = self.fC * self.fD * self.fstar
         #self.delk_neg = self.fC * self.fD * self.delfstar
         super(Cl36Kfeld, self).__init__()
 
     def relative_error(self, concentration):
-        """
-        Approximate relative error for concentration.
+        """Approximate relative error for concentration.
 
         For now, assumes same statistics as Al-26.
         """
         return 4.40538328952 * concentration ** (-0.32879674)
 
     def measurement_error(self, concentration):
-        """ Approximate measurement error for concentration.
+        """Approximate measurement error for concentration.
 
         For now, assumes same statistics as Al-26.
         """
