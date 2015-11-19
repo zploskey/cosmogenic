@@ -2,12 +2,12 @@ import os
 import sys
 import subprocess
 
-import numpy
+try:
+        from setuptools import setup, Extension
+except ImportError:
+        from distutils.core import setup, Extension
 
 import cosmogenic
-
-from setuptools import setup
-from setuptools.extension import Extension
 
 ISRELEASED = False
 
@@ -39,7 +39,7 @@ def setup_package():
     if not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
         # Compile Cython modules unless building from source release.
         from Cython.Build import cythonize 
-        
+        import numpy
         numpy_include = numpy.get_include()
         ext_modules = cythonize([
             Extension(
@@ -76,6 +76,9 @@ def setup_package():
             "numpy (>=1.6)",
             "scipy (>=0.11)",
             "matplotlib (>=1.1)",
+            ],
+        install_requires=[
+            "numpy",
             ],
         ext_modules=ext_modules,
     )
