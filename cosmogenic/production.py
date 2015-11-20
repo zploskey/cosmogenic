@@ -175,8 +175,7 @@ class ProductionSpline(InterpolatedUnivariateSpline):
     The number of data points must be larger than the spline degree `k`.
     """
 
-    def __init__(self, x=None, y=None, w=None, bbox=[None] * 2, k=3, s=0,
-                 filename=None):
+    def __init__(self, *args, **kwargs):
         """
 
         Parameters
@@ -199,16 +198,29 @@ class ProductionSpline(InterpolatedUnivariateSpline):
           filename   - file to load a saved spline from
         """
 
-        if (x is None) or (y is None) and (filename is not None):
-            self._data = util.unpickle(filename)
-        else:
-            self._data = dfitpack.fpcurf0(x, y, k, w=w,
-                                          xb=bbox[0], xe=bbox[1], s=s)
+        self.filename = None
+        self.ext = None
 
-        self._reset_class()
+        if 'filename' in kwargs:
+            self.filename = kwargs['filename']
+            del kwargs['filename']
+            data = util.unpickle(self.filename)
 
-    def __call__(self, x, nu=0):
-        res = super(ProductionSpline, self).__call__(x, nu)
+            if type(data) == tuple:
+                # Old style data format
+                self._data = data
+                self.ext = 0
+            else:
+                # New style data format is dict
+                self._data = data['_data']
+                self.ext = data['ext']
+
+            self._reset_class()
+        else: 
+            super(ProductionSpline, self).__init__(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        res = super(ProductionSpline, self).__call__(*args, **kwargs)
         res_arr = np.atleast_1d(res)
         res_arr[res_arr < 0.0] = 0.0
         return res_arr[0] if res_arr.size == 1 else res_arr
@@ -227,4 +239,16 @@ class ProductionSpline(InterpolatedUnivariateSpline):
         not compatible between Python 2 and Python 3.
 
         """
-        util.pickle(self._data, filename)
+
+        data = {'_data': self._data}
+
+        if self.ext is not None:
+            data['ext'] = self.ext
+        else:
+            # We are on an older version of SciPy, just use ext=0
+            # meaning to extrapolate. SciPy versions before 0.15 always
+            # did this.
+            data['ext'] = 0
+
+        util.pickle(data, filename)
+        self.filename = filename
