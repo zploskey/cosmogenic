@@ -1,6 +1,8 @@
 ==========
 Cosmogenic
 ==========
+.. image:: https://travis-ci.org/cosmolab/cosmogenic.svg?branch=master
+    :target: https://travis-ci.org/cosmolab/cosmogenic
 
 Cosmogenic is a Python library for modeling in-situ cosmogenic nuclide accumulation during various geomorphic processes.
 
