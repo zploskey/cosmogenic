@@ -3,9 +3,9 @@ import sys
 import subprocess
 
 try:
-        from setuptools import setup, Extension
+    from setuptools import setup, Extension
 except ImportError:
-        from distutils.core import setup, Extension
+    from distutils.core import setup, Extension
 
 import cosmogenic
 
@@ -34,11 +34,11 @@ def setup_package():
         cmdclass = {'build_sphynx': CosmogenicBuildDoc}
     else:
         cmdclass = {}
-    
+
     cwd = os.path.dirname(os.path.abspath(__file__))
     if not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
         # Compile Cython modules unless building from source release.
-        from Cython.Build import cythonize 
+        from Cython.Build import cythonize
         import numpy
         numpy_include = numpy.get_include()
         ext_modules = cythonize([
@@ -52,7 +52,7 @@ def setup_package():
                 ["cosmogenic/parma.pyx"],
                 include_dirs=[numpy_include]),
             ])
-    
+
     setup(
         name="cosmogenic",
         packages=["cosmogenic"],
